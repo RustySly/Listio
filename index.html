@@ -31,7 +31,8 @@
       <div style="color:var(--muted);font-size:12px">Columns appear on the right</div>
     </aside>
     <main class="board">
-      <!-- we’ll inject UI later; for now just gate -->
+      <button id="btn-create-board" class="btn">Create Board</button>
+      <button id="btn-add-column" class="btn">+ Add Column</button>
     </main>
   </div>
 
@@ -84,6 +85,54 @@
     window.addEventListener('focus', gate);
 
     gate();
+
+    <script>
+      // --- Minimal DB test handlers ---
+      const btnCreate = document.getElementById('btn-create-board');
+      const btnAddCol = document.getElementById('btn-add-column');
+    
+      // helper to show messages in the yellow box you already see
+      function show(msg){ const el = document.getElementById('dbg'); el.textContent = msg; el.style.display='block'; }
+    
+      let currentBoardId = null;
+    
+      // ask the DB for your board (once)
+      async function ensureBoard(){
+        const { data: sess } = await supabase.auth.getSession();
+        const uid = sess.session.user.id;
+    
+        // try to fetch an existing one
+        const { data: boards, error, status } = await supabase
+          .from('boards').select('*').eq('owner_id', uid).limit(1);
+    
+        if (error) { show(`Load boards error (${status}): ${error.message}`); return null; }
+        if (boards && boards.length) { currentBoardId = boards[0].id; return currentBoardId; }
+    
+        // create one if missing
+        const { data: created, error: cErr, status: cStatus } = await supabase
+          .from('boards').insert({ title: 'My Board', owner_id: uid }).select('*').single();
+    
+        if (cErr) { show(`Create board error (${cStatus}): ${cErr.message}`); return null; }
+        currentBoardId = created.id;
+        show(`Board created ✔ (${currentBoardId.slice(0,8)})`);
+        return currentBoardId;
+      }
+    
+      btnCreate.onclick = async ()=>{ await ensureBoard(); };
+    
+      btnAddCol.onclick = async ()=>{
+        const id = currentBoardId || await ensureBoard();
+        if (!id) return;
+        const { error, status } = await supabase.from('columns').insert({
+          board_id: id,
+          title: 'New Column',
+          owner_id: (await supabase.auth.getUser()).data.user.id,
+          position: Math.floor(Date.now()/1000)
+        });
+        if (error) show(`Insert column failed (${status}): ${error.message}`);
+        else show('Column created ✔');
+      };
+    </script>
   </script>
 </body>
 </html>
