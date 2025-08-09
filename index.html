@@ -6,7 +6,7 @@
 <title>Columns – Listio</title>
 <style>
   :root{
-    --bg:#f7f8fa; --panel:#ffffff; --ink:#111827; --muted:#9aa3ae; --accent:#2d6cdf;
+    --bg:#ffffff; --panel:#ffffff; --ink:#111827; --muted:#9aa3ae; --accent:#2d6cdf;
     --line:#eceff3; --pill-bg:#eef3ff; --danger:#ef4343; --side:#f4f5f7;
   }
   *{box-sizing:border-box} html,body{height:100%}
@@ -18,20 +18,19 @@
     background:var(--side);border-right:1px solid var(--line);padding:16px 14px 80px;position:relative;
   }
   .brand-row{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 14px}
-  .brand{font-weight:800;letter-spacing:.2px;font-size:22px}
+  .brand{font-weight:800;letter-spacing:.2px;font-size:32px} /* bigger like screenshot */
   .dots{width:22px;height:22px;border-radius:8px;display:grid;place-items:center;color:#6b7280}
-  .nav{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-  .nav .label{font-weight:600;margin:4px 6px 2px}
-  .nav a{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;color:#111827;text-decoration:none}
-  .nav a .icon{width:18px;height:18px;border-radius:6px;display:grid;place-items:center;background:#eaf1ff;color:#2d6cdf;font-size:12px}
-  .nav a.active{background:#eaf1ff}
-  .nav a.muted{color:#6b7280}
+  .nav{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+  .nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;color:#111827;text-decoration:none}
+  .nav a .icon{width:22px;height:22px;border-radius:8px;display:grid;place-items:center;background:#eaf1ff;color:#2d6cdf;font-size:12px}
+  .nav a.active{background:#dbe9ff}
+  .nav a.muted{color:#9aa3ae}
   .nav a .ghost{background:transparent;border:1px dashed var(--line);color:#9aa3ae}
 
   /* floating docks (bottom corners) */
   .dock-left, .dock-right{
     position:fixed;bottom:16px;display:flex;gap:10px;background:#fff;border:1px solid var(--line);
-    padding:8px;border-radius:14px;box-shadow:0 6px 18px rgba(17,24,39,.08)
+    padding:8px;border-radius:14px;box-shadow:0 6px 18px rgba(17,24,39,.08);z-index:5
   }
   .dock-left{left:16px}
   .dock-right{right:16px}
@@ -45,19 +44,52 @@
     height:100vh; overflow:auto; padding:28px 28px 100px; display:flex; gap:18px; align-items:stretch; background:#fff;
   }
 
-  /* Column look (minimal, like screenshot) */
+  /* Column look */
   .column{
     background:transparent; border:0; border-radius:0; min-width:320px; max-width:360px;
     display:flex; flex-direction:column; height:100%;
   }
-  .col-header{display:flex;align-items:baseline;gap:12px;padding:0 0 12px;border-bottom:1px solid var(--line)}
-  .col-title{font-weight:800;font-size:28px;line-height:1.15;padding:4px 6px;border-radius:8px}
+  .col-header{display:flex;align-items:center;gap:14px;padding:0 0 12px;border-bottom:1px solid var(--line)}
+  .col-title{font-weight:900;font-size:44px;line-height:1.05;padding:4px 6px;border-radius:8px} /* matches shot sizing */
   .col-title[contenteditable="true"]:focus{outline:1.5px solid var(--accent);background:var(--pill-bg)}
   .col-actions{margin-left:auto;display:flex;gap:6px}
   .icon-btn{all:unset;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;cursor:pointer;border:1px solid var(--line);font-size:12px;color:#6b7280}
   .icon-btn:hover{background:#f5f5f5}
 
-  .hint-add{color:#9aa3ae;font-size:14px}
+  /* "+ Add card" ghost (hover becomes a rounded pill) */
+  .add-card-ghost{
+    display:inline-flex;align-items:center;gap:10px;
+    color:#9aa3ae;font-size:18px;margin:8px 0 6px;padding:8px 12px;border-radius:14px;
+    transition:background .15s ease,color .15s ease;
+    cursor:pointer; user-select:none;
+  }
+  .add-card-ghost .plus{font-size:22px;color:#9aa3ae;transition:color .15s ease}
+  .add-card-ghost .small-rect{
+    margin-left:10px;width:26px;height:26px;border-radius:8px;border:1px solid #d7dbe1;display:grid;place-items:center;color:#c7cbd1;font-size:16px
+  }
+  .add-card-ghost:hover{background:#f3f4f6;color:#374151}
+  .add-card-ghost:hover .plus{color:#2d6cdf}
+
+  /* Composer card (when Add card is clicked) */
+  .composer{
+    background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px 12px;
+    box-shadow:0 12px 26px rgba(17,24,39,.10); width:520px; max-width:92%;
+  }
+  .composer .top{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .composer .chk{width:20px;height:20px;accent-color:var(--accent)}
+  .composer .title{
+    border:0;outline:none;font-size:24px;font-weight:600;color:#111827;width:100%;
+  }
+  .composer .notes{
+    border:0;outline:none;font-size:18px;color:#9aa3ae;resize:vertical;width:100%;min-height:28px;margin-top:4px
+  }
+  .composer .bar{display:flex;align-items:center;gap:18px;padding-top:10px;color:#c3c7cf}
+  .composer .bar .pill{
+    width:36px;height:36px;border:1px solid #e3e7ee;border-radius:50%;display:grid;place-items:center;cursor:pointer
+  }
+  .composer .bar .ghost{opacity:.8}
+  .composer .drop{margin-left:auto;color:#c3c7cf}
+
   .cards{display:flex;flex-direction:column;gap:8px;padding:14px 0;min-height:48px;flex:1}
   .card{
     background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
@@ -66,26 +98,23 @@
   .checkbox{width:16px;height:16px;accent-color:var(--accent)}
   .card-text{white-space:pre-wrap;outline:none;font-size:14px}
 
-  .adder{border-top:1px dashed var(--line);padding:10px 0;display:flex;gap:8px}
-  .adder input{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:transparent;color:var(--ink);font-size:14px}
-  .btn{all:unset;background:#eef2ff;border:1px solid #d6e6ff;padding:8px 12px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px}
-  .btn.danger{background:var(--danger);color:#fff;border-color:transparent}
+  .adder{display:none} /* we no longer use the old adder UI */
 
-  /* “Add Column” tile – same height as columns, on the right */
-  .add-tile{
-    background:#f6f7fa;border:1px dashed var(--line);border-radius:12px;min-width:320px;max-width:360px;
-    display:flex;align-items:center;justify-content:center;color:#9aa3ae;height:100%;
-  }
-  .add-tile:hover{background:#eef2ff;color:#1e40af;cursor:pointer}
-
-  /* big faint plus in the empty canvas area */
+  /* Right-side lonely plus to add column */
   .canvas-plus{
-    position:relative;flex:1;border-left:1px solid var(--line)
+    position:relative;flex:1;border-left:1px solid var(--line);min-width:240px;
+    display:block;cursor:pointer;
   }
-  .canvas-plus:after{
+  .canvas-plus::after{
     content:"+"; position:absolute; inset:0; display:grid; place-items:center;
-    color:#e5e7eb; font-size:28px; pointer-events:none
+    color:#e5e7eb; font-size:28px; pointer-events:none; transition:opacity .15s ease;
   }
+  .canvas-plus::before{
+    content:"Add Column"; position:absolute; left:50%; top:calc(50% + 26px);
+    transform:translateX(-50%); color:#c7cad0; font-size:14px; opacity:0; transition:opacity .15s ease;
+  }
+  .canvas-plus:hover{background:#fafbfc}
+  .canvas-plus:hover::before{opacity:1}
 
   /* drag */
   .dragging{opacity:.6}
@@ -115,16 +144,15 @@
           <span>Add board</span>
         </a>
 
-        <div class="label" style="margin-top:14px"> </div>
-        <a class="muted" href="#"><span>🗂</span><span>Archive</span></a>
+        <a class="muted" href="#" style="margin-top:16px"><span>🗂</span><span>Archive</span></a>
         <a class="muted" href="#"><span>🗑</span><span>Trash</span></a>
       </nav>
     </aside>
 
     <!-- Board -->
     <main class="board" id="board">
-      <!-- columns will be injected here -->
-      <div class="canvas-plus" aria-hidden="true"></div>
+      <!-- columns injected here -->
+      <div class="canvas-plus" id="add-col-ghost" title="Add Column"></div>
     </main>
   </div>
 
@@ -188,16 +216,12 @@
 
     (columns||[]).forEach(c => next.appendChild(renderColumn(c)));
 
-    // + Add Column tile (always to the right, equal height)
-    const addTile = document.createElement('div');
-    addTile.className = 'add-tile';
-    addTile.innerHTML = '<div><div style="font-size:22px;line-height:1;margin-bottom:4px">＋</div><div>Add Column</div></div>';
-    addTile.onclick = addColumn;
-    next.appendChild(addTile);
-
-    // keep a big empty canvas area to the far right like screenshot
+    // right-side lonely plus region (always last)
     const canvas = document.createElement('div');
     canvas.className = 'canvas-plus';
+    canvas.id = 'add-col-ghost';
+    canvas.title = 'Add Column';
+    canvas.onclick = addColumn;
     next.appendChild(canvas);
 
     boardEl.replaceChildren(...next.children);
@@ -222,16 +246,16 @@
     wrap.innerHTML = `
       <div class="col-header">
         <div class="col-title" contenteditable="true">${col.title}</div>
-        <div class="hint-add">+ Add card</div>
+        <div class="add-card-ghost" data-col="${col.id}">
+          <span class="plus">＋</span>
+          <span>Add card</span>
+          <span class="small-rect">＋</span>
+        </div>
         <div class="col-actions" title="Delete">
           <button class="icon-btn">🗑</button>
         </div>
       </div>
       <div class="cards" data-col="${col.id}"></div>
-      <div class="adder">
-        <input placeholder="Add a card..." />
-        <button class="btn">Add</button>
-      </div>
     `;
 
     // rename column
@@ -258,16 +282,10 @@
       enableCardDnD(cardsEl);
     })();
 
-    // add card
-    const input = wrap.querySelector('.adder input');
-    wrap.querySelector('.adder button').onclick = async ()=>{
-      const text = input.value.trim(); if(!text) return;
-      const { error } = await supabase.from('cards').insert({
-        column_id: col.id, text, position: Math.floor(Date.now()/1000), created_by: session.user.id
-      });
-      if (error) show('Add card failed: '+error.message);
-      else input.value='';
-    };
+    // add card ghost -> composer
+    wrap.querySelector('.add-card-ghost').addEventListener('click', ()=>{
+      openComposer(wrap.querySelector('.cards'), col.id);
+    });
 
     enableColumnDnD(wrap);
     return wrap;
@@ -294,21 +312,74 @@
     return el;
   }
 
+  /* ===== Inline composer (3rd screenshot behavior) ===== */
+  function openComposer(cardsEl, colId){
+    // If a composer is already open in this column, do nothing
+    if (cardsEl.querySelector('.composer')) return;
+
+    const composer = document.createElement('div');
+    composer.className = 'composer';
+    composer.innerHTML = `
+      <div class="top">
+        <input class="chk" type="checkbox" />
+        <input class="title" placeholder="New card" />
+      </div>
+      <textarea class="notes" placeholder="Notes"></textarea>
+      <div class="bar">
+        <div class="pill add-pill" title="Add">＋</div>
+        <div class="pill ghost" title="Assign">👤</div>
+        <div class="pill ghost" title="Date">📅</div>
+        <div class="pill ghost" title="Attach">🖇</div>
+        <div class="drop">Drop files here</div>
+      </div>
+    `;
+
+    // insert at top
+    cardsEl.prepend(composer);
+    const titleInput = composer.querySelector('.title');
+    const notesInput = composer.querySelector('.notes');
+    titleInput.focus();
+
+    async function submit(){
+      const title = titleInput.value.trim();
+      const notes = notesInput.value.trim();
+      if (!title) { close(); return; }
+
+      const text = notes ? (title + "\n" + notes) : title;
+      const { error } = await supabase.from('cards').insert({
+        column_id: colId,
+        text,
+        position: Math.floor(Date.now()/1000),
+        created_by: session.user.id
+      });
+      if (error) show('Add card failed: '+error.message);
+      close();
+    }
+    function close(){
+      composer.remove();
+    }
+
+    composer.querySelector('.add-pill').addEventListener('click', submit);
+    composer.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); submit(); }
+      if (e.key === 'Escape'){ e.preventDefault(); close(); }
+    });
+  }
+
   // ===== Drag & drop – Columns
-  const board = document.getElementById('board');
   function enableColumnDnD(colEl){
     colEl.addEventListener('dragstart', e=>{ colEl.classList.add('dragging'); e.dataTransfer.setData('text/col', colEl.dataset.colId); });
     colEl.addEventListener('dragend', ()=> colEl.classList.remove('dragging'));
-    board.addEventListener('dragover', e=>{
+    boardEl.addEventListener('dragover', e=>{
       const dragging = document.querySelector('.column.dragging');
       if(!dragging) return;
       e.preventDefault();
-      const siblings = [...board.querySelectorAll('.column')].filter(x=>x!==dragging);
+      const siblings = [...boardEl.querySelectorAll('.column')].filter(x=>x!==dragging);
       const after = siblings.find(s=> e.clientX <= s.getBoundingClientRect().left + s.offsetWidth/2 );
-      board.insertBefore(dragging, after || null);
+      boardEl.insertBefore(dragging, after || null);
     });
-    board.addEventListener('drop', async ()=>{
-      const ids = [...board.querySelectorAll('.column')].map(el=>el.dataset.colId).filter(Boolean);
+    boardEl.addEventListener('drop', async ()=>{
+      const ids = [...boardEl.querySelectorAll('.column')].map(el=>el.dataset.colId).filter(Boolean);
       const updates = ids.map((id, i)=> ({ id, position: i+1 }));
       if(!ids.length) return;
       const { error } = await supabase.from('columns').upsert(updates);
@@ -357,6 +428,9 @@
       .on('postgres_changes',{event:'*',schema:'public',table:'cards'}, loadBoard)
       .subscribe();
   }
+
+  // click on the initial canvas-plus that’s present in the static HTML (before first load)
+  document.getElementById('add-col-ghost')?.addEventListener('click', addColumn);
   </script>
 </body>
 </html>
