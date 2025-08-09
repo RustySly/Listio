@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Boards – Minimal Columns</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --ink: #000000;
+    --muted: #999999;
+    --accent: #2d64ff;
+    --line: #e6e6e6;
+    --pill-bg: #f0f3ff;
+    --ok: #16a34a;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --shadow: none;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink); font: 15px/1.45 -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  }
+  .app{display:grid; grid-template-columns: 240px 1fr; height:100%}
+  .sidebar{padding:18px; border-right:1px solid var(--line); background:var(--bg)}
+  .brand{font-weight:700; font-size:24px; letter-spacing:-0.02em;}
+  .workspace{margin-top:4px; color:var(--muted); font-size:12px}
+  .nav{margin-top:18px; display:grid; gap:4px}
+  .nav button{
+    all:unset; display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:6px; cursor:pointer; color:var(--ink);
+  }
+  .nav button:hover{background:#f5f5f5}
+  .nav button.active{background:#f0f0f0}
+  .nav .pill{margin-left:auto; background:var(--pill-bg); color:var(--accent); padding:2px 6px; border-radius:999px; font-size:11px}
+  .topbar{display:flex; align-items:center; gap:10px; padding:12px 18px; border-bottom:1px solid var(--line); background:var(--bg)}
+  .board-title{font-size:20px; font-weight:600;}
+  .hint{color:var(--muted); font-size:12px}
+  .spacer{flex:1}
+  .btn{
+    all:unset; background:#f5f5f5; border:1px solid var(--line); padding:6px 10px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:13px;
+  }
+  .btn:hover{background:#eaeaea}
+  .btn.primary{background:var(--accent); border-color:transparent; color:#fff}
+  .btn.danger{background:var(--danger); color:#fff; border-color:transparent}
+  .board{height:calc(100% - 49px); overflow:auto; padding:16px; display:flex; gap:16px; background:#fafafa}
+  .column{background:var(--panel); border:1px solid var(--line); border-radius:8px; min-width:280px; max-width:320px; display:flex; flex-direction:column}
+  .col-header{display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--line)}
+  .col-title{font-weight:600; font-size:14px; padding:4px; border-radius:4px}
+  .col-title[contenteditable="true"]:focus{outline:1px solid var(--accent); background:var(--pill-bg)}
+  .col-actions{margin-left:auto; display:flex; gap:4px}
+  .icon-btn{all:unset; width:24px; height:24px; border-radius:4px; display:grid; place-items:center; cursor:pointer; border:1px solid var(--line); font-size:12px; color:var(--muted)}
+  .icon-btn:hover{background:#f5f5f5}
+  .cards{display:flex; flex-direction:column; gap:8px; padding:10px; min-height:50px}
+  .card{background:#fff; border:1px solid var(--line); border-radius:6px; padding:8px; display:grid; grid-template-columns:auto 1fr auto; align-items:flex-start; gap:8px}
+  .checkbox{width:16px; height:16px; accent-color:var(--accent);}
+  .card-text{white-space:pre-wrap; outline:none; font-size:13px}
+  .meta{display:flex; gap:4px}
+  .pill-date{font-size:10px; color:var(--accent); background:var(--pill-bg); padding:1px 4px; border-radius:999px}
+  .adder{border-top:1px dashed var(--line); padding:8px; display:flex; gap:6px}
+  .adder input{flex:1; border:1px solid var(--line); border-radius:4px; padding:8px; background:transparent; color:var(--ink); font-size:13px}
+  .adder button{border-radius:4px; font-size:13px}
+  .empty{color:var(--muted); font-size:12px; text-align:center; padding:8px}
+  .cards.drag-over{outline:1px dashed var(--accent); outline-offset:-4px}
+  /* === Columns theme override === */
+  :root{
+    --bg:#f7f8fa; --panel:#ffffff; --ink:#1f2937; --muted:#9aa3ae; --accent:#2d6cdf; --line:#eceff3; --pill-bg:#eef3ff; --ok:#16a34a; --warn:#f59e0b; --danger:#ef4343; --shadow:0 10px 24px rgba(17,24,39,.06);
+  }
+  .nav button.active{background:#eaf2ff; border:1px solid #d6e6ff; box-shadow:none}
+  .pill-date{font-size:11px; color:#d11f3e; background:#ffecee; padding:2px 6px; border-radius:999px}
+</style>
+</head>
+<body>
+<div class="app" id="app" style="display:none">
+  <aside class="sidebar">
+    <div class="brand">Boards</div>
+    <div class="workspace" id="user-email"></div>
+    <div class="nav" id="boards-list"></div>
+    <div style="margin-top:12px; display:flex; gap:8px">
+      <button class="btn primary" id="new-board">New board</button>
+      <button class="btn" id="signout">Sign out</button>
+    </div>
+  </aside>
+  <main style="display:flex; flex-direction:column">
+    <div class="topbar">
+      <div class="board-title" contenteditable="true" id="board-title">Untitled Board</div>
+      <div class="hint" id="share-hint" style="margin-left:12px">Share: add teammate email →</div>
+      <div class="spacer"></div>
+      <input id="share-email" placeholder="Add collaborator email" style="border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:13px"/>
+      <button class="btn" id="share-add">Invite</button>
+    </div>
+    <div class="board" id="board"></div>
+  </main>
+</div>
+
+<!-- Auth Gate -->
+<div id="auth" style="display:grid; place-items:center; height:100%">
+  <div style="background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); width:min(520px,92vw); padding:24px">
+    <div style="font-size:20px; font-weight:700; margin-bottom:8px">Sign in</div>
+    <div class="hint" style="margin-bottom:16px">Use email + password. We'll create your account if it doesn't exist.</div>
+    <form id="auth-form" style="display:grid; gap:10px">
+      <input id="email" type="email" placeholder="Email" required style="padding:10px; border:1px solid var(--line); border-radius:8px; font-size:14px"/>
+      <input id="password" type="password" placeholder="Password" required style="padding:10px; border:1px solid var(--line); border-radius:8px; font-size:14px"/>
+      <button class="btn primary" type="submit">Continue</button>
+      <div class="hint" id="auth-error" style="color:var(--danger)"></div>
+    </form>
+  </div>
+</div>
+
+<!-- Minimal column/card template will be generated by JS -->
+
+<script type="module">
+// === Firebase (client-only backend) ===
+// 1) Create a Firebase project → Web app → copy config below.
+// 2) Enable Authentication (Email/Password) and Firestore database.
+// 3) Deploy rules from the snippet I provide after this code.
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, serverTimestamp, collection, query, where, getDocs, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+const appFB = initializeApp(firebaseConfig);
+const auth = getAuth(appFB);
+const db = getFirestore(appFB);
+
+// === Simple state ===
+let currentUser = null;
+let currentBoardId = null;
+
+// === DOM helpers ===
+const $ = (sel) => document.querySelector(sel);
+const appEl = $('#app');
+const authEl = $('#auth');
+const boardsList = $('#boards-list');
+const boardEl = $('#board');
+const boardTitleEl = $('#board-title');
+const userEmailEl = $('#user-email');
+const authForm = $('#auth-form');
+const authError = $('#auth-error');
+
+// === Auth flow ===
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    userEmailEl.textContent = user.email;
+    authEl.style.display = 'none';
+    appEl.style.display = 'grid';
+    await ensureDefaultBoard();
+    await listBoards();
+  } else {
+    currentUser = null;
+    appEl.style.display = 'none';
+    authEl.style.display = 'grid';
+  }
+});
+
+authForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  authError.textContent = '';
+  const email = $('#email').value.trim();
+  const password = $('#password').value;
+  try {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else throw err;
+    }
+  } catch (err) {
+    authError.textContent = err.message;
+  }
+});
+
+$('#signout').addEventListener('click', () => signOut(auth));
+
+// === Boards ===
+async function ensureDefaultBoard() {
+  const q = query(collection(db, 'boards'), where('members', 'array-contains', currentUser.uid));
+  const snap = await getDocs(q);
+  if (!snap.empty) return; // user already has access to at least one board
+  const newBoard = await addDoc(collection(db, 'boards'), {
+    title: 'My First Board',
+    owner: currentUser.uid,
+    members: [currentUser.uid],
+    createdAt: serverTimestamp()
+  });
+  const cols = [
+    { id: crypto.randomUUID(), title: 'Todo', order: 0 },
+    { id: crypto.randomUUID(), title: 'Doing', order: 1 },
+    { id: crypto.randomUUID(), title: 'Done', order: 2 }
+  ];
+  await setDoc(doc(db, 'boardColumns', newBoard.id), { columns: cols });
+  await setDoc(doc(db, 'boardCards', newBoard.id), { cards: [] });
+}
+
+async function listBoards() {
+  boardsList.innerHTML = '';
+  const q = query(collection(db, 'boards'), where('members', 'array-contains', currentUser.uid));
+  const snap = await getDocs(q);
+  snap.forEach(d => {
+    const b = d.data();
+    const btn = document.createElement('button');
+    btn.innerHTML = `<span>📋</span>${b.title}`;
+    btn.addEventListener('click', () => loadBoard(d.id));
+    boardsList.appendChild(btn);
+  });
+  if (!currentBoardId && snap.docs[0]) loadBoard(snap.docs[0].id);
+}
+
+$('#new-board').addEventListener('click', async () => {
+  const title = prompt('Board name?') || 'Untitled';
+  const ref = await addDoc(collection(db, 'boards'), {
+    title, owner: currentUser.uid, members: [currentUser.uid], createdAt: serverTimestamp()
+  });
+  await setDoc(doc(db, 'boardColumns', ref.id), { columns: [] });
+  await setDoc(doc(db, 'boardCards', ref.id), { cards: [] });
+  await listBoards();
+  await loadBoard(ref.id);
+});
+
+async function loadBoard(boardId){
+  if (currentBoardId) unsubscribeBoard?.();
+  currentBoardId = boardId;
+  // live subscribe to columns + cards
+  const unsubCols = onSnapshot(doc(db, 'boardColumns', boardId), (d) => {
+    const cols = d.exists() ? d.data().columns : [];
+    renderBoard(cols);
+  });
+  const unsubBoard = onSnapshot(doc(db, 'boards', boardId), (d) => {
+    if (d.exists()) boardTitleEl.textContent = d.data().title || 'Untitled';
+  });
+  unsubscribeBoard = () => { unsubCols(); unsubBoard(); };
+}
+let unsubscribeBoard = null;
+
+function renderBoard(columns){
+  boardEl.innerHTML = '';
+  if (!columns.length){
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'No columns yet. Add one with the + button (coming soon).';
+    boardEl.appendChild(empty);
+    return;
+  }
+  for (const col of columns.sort((a,b)=>a.order-b.order)){
+    const colEl = document.createElement('section');
+    colEl.className = 'column';
+    colEl.innerHTML = `
+      <div class="col-header">
+        <div class="col-title" contenteditable="true" data-id="${col.id}">${col.title}</div>
+        <div class="col-actions">
+          <button class="icon-btn" data-action="delete" title="Delete">✕</button>
+        </div>
+      </div>
+      <div class="cards" data-col="${col.id}"></div>
+      <div class="adder">
+        <input placeholder="Add a card…" />
+        <button class="btn">Add</button>
+      </div>`;
+    boardEl.appendChild(colEl);
+  }
+  // wire events for title updates
+  boardEl.querySelectorAll('.col-title').forEach(el => {
+    el.addEventListener('blur', async (e) => {
+      await mutateColumns(cols => {
+        const c = cols.find(x=>x.id === el.dataset.id); if (c) c.title = el.textContent.trim() || 'Untitled';
+      });
+    });
+  });
+}
+
+async function mutateColumns(mutator){
+  const ref = doc(db, 'boardColumns', currentBoardId);
+  const snap = await getDoc(ref);
+  const cols = snap.exists()? (snap.data().columns||[]) : [];
+  mutator(cols);
+  await setDoc(ref, { columns: cols });
+}
+
+// Share (invite collaborator by email)
+$('#share-add').addEventListener('click', async () => {
+  const email = $('#share-email').value.trim();
+  if (!email) return;
+  // Naive: look up user by email mirror document (User Directory)
+  const userRef = doc(db, 'usersByEmail', email.toLowerCase());
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) { alert('User has not signed in yet. Ask them to sign in once, then invite again.'); return; }
+  const uid = userSnap.data().uid;
+  await updateDoc(doc(db, 'boards', currentBoardId), { members: arrayUnion(uid) });
+  $('#share-email').value = '';
+  alert('Invited!');
+});
+
+// Maintain a basic directory for email→uid on first login
+onAuthStateChanged(auth, async (u) => {
+  if (!u) return;
+  await setDoc(doc(db, 'usersByEmail', (u.email||'').toLowerCase()), { uid: u.uid }, { merge: true });
+});
+
+// Update board title
+boardTitleEl.addEventListener('blur', async () => {
+  if (!currentBoardId) return;
+  await updateDoc(doc(db, 'boards', currentBoardId), { title: boardTitleEl.textContent.trim() || 'Untitled' });
+});
+</script>
+</body>
+</html>
