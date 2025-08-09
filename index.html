@@ -13,24 +13,15 @@
   .btn{all:unset;background:#eef2ff;border:1px solid #d6e6ff;padding:6px 10px;border-radius:6px;cursor:pointer}
   .app{display:grid;grid-template-columns:240px 1fr;height:calc(100% - 49px)}
   .sidebar{padding:18px;border-right:1px solid var(--line);background:#fff}
-  .board{height:100%;overflow:auto;padding:16px;display:flex;gap:16px;background:#fafafa}
-  .column{background:#fff;border:1px solid var(--line);border-radius:8px;min-width:280px;max-width:320px;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(17,24,39,.06)}
-  .col-header{display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
-  .col-title{font-weight:600;font-size:14px;padding:4px;border-radius:4px}
-  .col-title[contenteditable="true"]:focus{outline:1px solid var(--accent);background:#eef3ff}
-  .col-actions{margin-left:auto;display:flex;gap:4px}
-  .icon-btn{all:unset;width:24px;height:24px;display:grid;place-items:center;border:1px solid var(--line);border-radius:4px;color:#6b7280;cursor:pointer}
-  .cards{display:flex;flex-direction:column;gap:8px;padding:10px;min-height:50px}
-  .card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px;display:grid;grid-template-columns:auto 1fr auto;gap:8px}
-  .adder{border-top:1px dashed var(--line);padding:8px;display:flex;gap:6px}
-  .adder input{flex:1;border:1px solid var(--line);border-radius:4px;padding:8px}
-  #authGate{position:fixed;inset:0;display:none;place-items:center;background:#fff}
+  .board{height:100%;overflow:auto;padding:16px}
+  #dbg{position:fixed;left:12px;bottom:12px;max-width:600px;padding:8px 10px;background:#fff3cd;border:1px solid #ffe08a;border-radius:8px;font:12px system-ui;color:#533f03;z-index:9999;white-space:pre-wrap}
 </style>
 </head>
 <body>
   <div class="top">
     <strong>Listio</strong>
     <div class="spacer"></div>
+    <div id="who" class="muted"></div>
     <button id="signout" class="btn" style="display:none">Sign out</button>
   </div>
 
@@ -39,13 +30,60 @@
       <div style="font-weight:600;margin-bottom:8px">Your Board</div>
       <div style="color:var(--muted);font-size:12px">Columns appear on the right</div>
     </aside>
-    <main class="board"></main>
+    <main class="board">
+      <!-- we’ll inject UI later; for now just gate -->
+    </main>
   </div>
 
-  <!-- Only shown if no session; redirects to /auth.html -->
-  <div id="authGate"><div>Redirecting to sign in…</div></div>
+  <div id="dbg" style="display:none"></div>
 
+  <!-- Supabase SDK -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script type="module" src="./js/app.js"></script>
+  <script>
+    const SUPABASE_URL = "https://xqxuccpotbdmqqhxisdf.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxeHVjY3BvdGJkbXFxaHhpc2RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NTg5MjYsImV4cCI6MjA3MDMzNDkyNn0.Jb3LaflzKGT6di_t14FLbGdexQ2lTKQ-dIt5Ve9aP-8";
+    const STORAGE_KEY = "listio-auth-v1";
+    const AUTH_URL = "/Listio/auth.html";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey: STORAGE_KEY }
+    });
+
+    const dbg = document.getElementById('dbg');
+    const who = document.getElementById('who');
+    const signout = document.getElementById('signout');
+
+    function show(msg){ dbg.textContent = msg; dbg.style.display = 'block'; }
+
+    async function gate(){
+      const { data } = await supabase.auth.getSession();
+      const session = data?.session || null;
+      if (!session){
+        show('No session → redirecting to sign in…');
+        setTimeout(()=>location.replace(AUTH_URL), 300);
+        return;
+      }
+      // show who’s signed in
+      who.textContent = session.user.email + ' • ' + session.user.id.slice(0,8);
+      signout.style.display = 'inline-flex';
+      show('SESSION OK. You are signed in. (No database calls yet.)');
+    }
+
+    signout.addEventListener('click', async ()=>{
+      await supabase.auth.signOut();
+      localStorage.removeItem(STORAGE_KEY);
+      location.replace(AUTH_URL);
+    });
+
+    // Guard against tab-switch flicker
+    supabase.auth.onAuthStateChange(async (ev, s)=>{
+      if (ev === 'SIGNED_OUT'){ setTimeout(gate, 200); }
+      if (ev === 'SIGNED_IN' || ev === 'TOKEN_REFRESHED'){ setTimeout(gate, 0); }
+    });
+    document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') gate(); });
+    window.addEventListener('focus', gate);
+
+    gate();
+  </script>
 </body>
 </html>
