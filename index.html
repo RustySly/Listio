@@ -6,72 +6,139 @@
 <title>Columns – Listio</title>
 <style>
   :root{
-    --bg:#f7f8fa; --panel:#ffffff; --ink:#1f2937; --muted:#9aa3ae; --accent:#2d6cdf;
-    --line:#eceff3; --pill-bg:#eef3ff; --danger:#ef4343;
+    --bg:#f7f8fa; --panel:#ffffff; --ink:#111827; --muted:#9aa3ae; --accent:#2d6cdf;
+    --line:#eceff3; --pill-bg:#eef3ff; --danger:#ef4343; --side:#f4f5f7;
   }
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  body{margin:0;background:#fff;color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
 
-  /* topbar + sidebar */
-  .topbar{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line);background:#fff}
-  .brand{font-weight:700;font-size:18px}
-  .spacer{flex:1}
-  .btn{all:unset;background:#eef2ff;border:1px solid #d6e6ff;padding:6px 10px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px}
-  .btn.danger{background:var(--danger);color:#fff;border-color:transparent}
-  .app{display:grid;grid-template-columns:240px 1fr;height:calc(100% - 49px)}
-  .sidebar{padding:18px;border-right:1px solid var(--line);background:#fff}
-  .board{height:100%;overflow:auto;padding:16px;display:flex;gap:16px;background:#fafafa}
-
-  /* column + cards */
-  .column{background:#fff;border:1px solid var(--line);border-radius:8px;min-width:300px;max-width:340px;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(17,24,39,.06)}
-  .col-header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
-  .col-title{font-weight:700;font-size:18px;padding:4px;border-radius:6px}
-  .col-title[contenteditable="true"]:focus{outline:1px solid var(--accent);background:var(--pill-bg)}
-  .col-actions{margin-left:auto;display:flex;gap:6px}
-  .icon-btn{all:unset;width:26px;height:26px;border-radius:6px;display:grid;place-items:center;cursor:pointer;border:1px solid var(--line);font-size:12px;color:#6b7280}
-  .icon-btn:hover{background:#f5f5f5}
-  .cards{display:flex;flex-direction:column;gap:8px;padding:10px;min-height:48px}
-  .card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px;display:grid;grid-template-columns:auto 1fr auto;align-items:flex-start;gap:8px}
-  .checkbox{width:16px;height:16px;accent-color:var(--accent)}
-  .card-text{white-space:pre-wrap;outline:none;font-size:13px}
-  .adder{border-top:1px dashed var(--line);padding:8px;display:flex;gap:6px}
-  .adder input{flex:1;border:1px solid var(--line);border-radius:4px;padding:8px;background:transparent;color:var(--ink);font-size:13px}
-  .add-tile {
-    background:#f3f4f6;
-    border:1px dashed var(--line);
-    border-radius:8px;
-    min-width:300px;
-    max-width:340px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:#9aa3ae;
-    height:auto; /* Let flex stretch match others */
-    padding:10px;
+  /* App frame */
+  .app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+  .sidebar{
+    background:var(--side);border-right:1px solid var(--line);padding:16px 14px 80px;position:relative;
   }
-  .board { align-items: flex-start; } /* Ensure consistent height row alignment */
+  .brand-row{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 14px}
+  .brand{font-weight:800;letter-spacing:.2px;font-size:22px}
+  .dots{width:22px;height:22px;border-radius:8px;display:grid;place-items:center;color:#6b7280}
+  .nav{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .nav .label{font-weight:600;margin:4px 6px 2px}
+  .nav a{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;color:#111827;text-decoration:none}
+  .nav a .icon{width:18px;height:18px;border-radius:6px;display:grid;place-items:center;background:#eaf1ff;color:#2d6cdf;font-size:12px}
+  .nav a.active{background:#eaf1ff}
+  .nav a.muted{color:#6b7280}
+  .nav a .ghost{background:transparent;border:1px dashed var(--line);color:#9aa3ae}
+
+  /* floating docks (bottom corners) */
+  .dock-left, .dock-right{
+    position:fixed;bottom:16px;display:flex;gap:10px;background:#fff;border:1px solid var(--line);
+    padding:8px;border-radius:14px;box-shadow:0 6px 18px rgba(17,24,39,.08)
+  }
+  .dock-left{left:16px}
+  .dock-right{right:16px}
+  .circle{
+    width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);cursor:pointer
+  }
+  .circle.black{background:#111827;color:#fff;border-color:#111827}
+
+  /* Board canvas */
+  .board{
+    height:100vh; overflow:auto; padding:28px 28px 100px; display:flex; gap:18px; align-items:stretch; background:#fff;
+  }
+
+  /* Column look (minimal, like screenshot) */
+  .column{
+    background:transparent; border:0; border-radius:0; min-width:320px; max-width:360px;
+    display:flex; flex-direction:column; height:100%;
+  }
+  .col-header{display:flex;align-items:baseline;gap:12px;padding:0 0 12px;border-bottom:1px solid var(--line)}
+  .col-title{font-weight:800;font-size:28px;line-height:1.15;padding:4px 6px;border-radius:8px}
+  .col-title[contenteditable="true"]:focus{outline:1.5px solid var(--accent);background:var(--pill-bg)}
+  .col-actions{margin-left:auto;display:flex;gap:6px}
+  .icon-btn{all:unset;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;cursor:pointer;border:1px solid var(--line);font-size:12px;color:#6b7280}
+  .icon-btn:hover{background:#f5f5f5}
+
+  .hint-add{color:#9aa3ae;font-size:14px}
+  .cards{display:flex;flex-direction:column;gap:8px;padding:14px 0;min-height:48px;flex:1}
+  .card{
+    background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+    display:grid;grid-template-columns:auto 1fr auto;align-items:flex-start;gap:10px;box-shadow:0 8px 18px rgba(17,24,39,.06)
+  }
+  .checkbox{width:16px;height:16px;accent-color:var(--accent)}
+  .card-text{white-space:pre-wrap;outline:none;font-size:14px}
+
+  .adder{border-top:1px dashed var(--line);padding:10px 0;display:flex;gap:8px}
+  .adder input{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:transparent;color:var(--ink);font-size:14px}
+  .btn{all:unset;background:#eef2ff;border:1px solid #d6e6ff;padding:8px 12px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px}
+  .btn.danger{background:var(--danger);color:#fff;border-color:transparent}
+
+  /* “Add Column” tile – same height as columns, on the right */
+  .add-tile{
+    background:#f6f7fa;border:1px dashed var(--line);border-radius:12px;min-width:320px;max-width:360px;
+    display:flex;align-items:center;justify-content:center;color:#9aa3ae;height:100%;
+  }
   .add-tile:hover{background:#eef2ff;color:#1e40af;cursor:pointer}
+
+  /* big faint plus in the empty canvas area */
+  .canvas-plus{
+    position:relative;flex:1;border-left:1px solid var(--line)
+  }
+  .canvas-plus:after{
+    content:"+"; position:absolute; inset:0; display:grid; place-items:center;
+    color:#e5e7eb; font-size:28px; pointer-events:none
+  }
 
   /* drag */
   .dragging{opacity:.6}
   .cards.drag-over{outline:1px dashed var(--accent);outline-offset:-4px}
+
+  /* debug toast */
   #dbg{position:fixed;left:12px;bottom:12px;max-width:600px;padding:8px 10px;background:#fff3cd;border:1px solid #ffe08a;border-radius:8px;font:12px system-ui;color:#533f03;z-index:9999;white-space:pre-wrap;display:none}
 </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="brand">Columns</div>
-    <div class="spacer"></div>
-    <div id="who" class="muted" style="font-size:12px"></div>
-    <button id="signout" class="btn" style="display:none">Sign out</button>
-  </div>
 
   <div class="app">
+    <!-- Sidebar -->
     <aside class="sidebar">
-      <div style="font-weight:600;margin-bottom:8px">Your Board</div>
-      <div style="color:var(--muted);font-size:12px">Columns appear on the right</div>
+      <div class="brand-row">
+        <div class="brand">Listio</div>
+        <div class="dots">⋯</div>
+      </div>
+
+      <nav class="nav">
+        <a class="active" href="#">
+          <span class="icon">▦</span>
+          <span>Listio</span>
+        </a>
+        <a class="muted" href="#" id="add-board-link">
+          <span class="icon ghost">＋</span>
+          <span>Add board</span>
+        </a>
+
+        <div class="label" style="margin-top:14px"> </div>
+        <a class="muted" href="#"><span>🗂</span><span>Archive</span></a>
+        <a class="muted" href="#"><span>🗑</span><span>Trash</span></a>
+      </nav>
     </aside>
-    <main class="board" id="board"></main>
+
+    <!-- Board -->
+    <main class="board" id="board">
+      <!-- columns will be injected here -->
+      <div class="canvas-plus" aria-hidden="true"></div>
+    </main>
+  </div>
+
+  <!-- floating docks -->
+  <div class="dock-left">
+    <div class="circle">▦</div>
+    <div class="circle">🔍</div>
+    <div class="circle">🔔</div>
+    <div class="circle black">L</div>
+  </div>
+  <div class="dock-right">
+    <div class="circle">↺</div>
+    <div class="circle">⚙️</div>
+    <div class="circle">🗑</div>
   </div>
 
   <div id="dbg"></div>
@@ -81,7 +148,6 @@
   <script>
   // ===== helpers
   const boardEl = document.getElementById('board');
-  const whoEl = document.getElementById('who');
   const dbg = document.getElementById('dbg');
   function show(msg){ dbg.textContent = msg; dbg.style.display = 'block'; }
   function hideDbg(){ dbg.style.display = 'none'; }
@@ -92,17 +158,10 @@
   (async ()=>{
     session = await requireAuth('./auth.html');
     if (!session) return;
-    whoEl.textContent = session.user.email;
-    document.getElementById('signout').style.display = 'inline-flex';
     await ensureBoard();
     subscribeRealtime();
     await loadBoard();
   })();
-
-  document.getElementById('signout').onclick = async ()=>{
-    await supabase.auth.signOut();
-    location.replace('./auth.html');
-  };
 
   // ===== data
   async function ensureBoard(){
@@ -119,26 +178,30 @@
 
   async function loadBoard(){
     hideDbg();
+
     const { data: columns, error } = await supabase
       .from('columns').select('id,title,position').eq('board_id', currentBoardId)
       .order('position', { ascending: true });
     if (error){ show('Load columns error: '+error.message); return; }
-  
-    const next = document.createElement('div'); // offscreen render
-  
-    // render existing columns first
+
+    const next = document.createElement('div');
+
     (columns||[]).forEach(c => next.appendChild(renderColumn(c)));
-  
-    // + Add Column tile (goes at the end)
+
+    // + Add Column tile (always to the right, equal height)
     const addTile = document.createElement('div');
     addTile.className = 'add-tile';
-    addTile.innerHTML = '<div><div style="font-size:22px;line-height:1">＋</div><div>Add Column</div></div>';
+    addTile.innerHTML = '<div><div style="font-size:22px;line-height:1;margin-bottom:4px">＋</div><div>Add Column</div></div>';
     addTile.onclick = addColumn;
     next.appendChild(addTile);
-  
+
+    // keep a big empty canvas area to the far right like screenshot
+    const canvas = document.createElement('div');
+    canvas.className = 'canvas-plus';
+    next.appendChild(canvas);
+
     boardEl.replaceChildren(...next.children);
   }
-
 
   async function addColumn(){
     const { error } = await supabase.from('columns').insert({
@@ -159,8 +222,9 @@
     wrap.innerHTML = `
       <div class="col-header">
         <div class="col-title" contenteditable="true">${col.title}</div>
-        <div class="col-actions">
-          <button class="icon-btn" title="Delete">🗑</button>
+        <div class="hint-add">+ Add card</div>
+        <div class="col-actions" title="Delete">
+          <button class="icon-btn">🗑</button>
         </div>
       </div>
       <div class="cards" data-col="${col.id}"></div>
@@ -231,20 +295,20 @@
   }
 
   // ===== Drag & drop – Columns
+  const board = document.getElementById('board');
   function enableColumnDnD(colEl){
     colEl.addEventListener('dragstart', e=>{ colEl.classList.add('dragging'); e.dataTransfer.setData('text/col', colEl.dataset.colId); });
     colEl.addEventListener('dragend', ()=> colEl.classList.remove('dragging'));
-    boardEl.addEventListener('dragover', e=>{
+    board.addEventListener('dragover', e=>{
       const dragging = document.querySelector('.column.dragging');
       if(!dragging) return;
       e.preventDefault();
-      const siblings = [...boardEl.querySelectorAll('.column')].filter(x=>x!==dragging);
+      const siblings = [...board.querySelectorAll('.column')].filter(x=>x!==dragging);
       const after = siblings.find(s=> e.clientX <= s.getBoundingClientRect().left + s.offsetWidth/2 );
-      boardEl.insertBefore(dragging, after || null);
+      board.insertBefore(dragging, after || null);
     });
-    boardEl.addEventListener('drop', async ()=>{
-      // persist new order
-      const ids = [...boardEl.querySelectorAll('.column')].map(el=>el.dataset.colId).filter(Boolean);
+    board.addEventListener('drop', async ()=>{
+      const ids = [...board.querySelectorAll('.column')].map(el=>el.dataset.colId).filter(Boolean);
       const updates = ids.map((id, i)=> ({ id, position: i+1 }));
       if(!ids.length) return;
       const { error } = await supabase.from('columns').upsert(updates);
