@@ -78,7 +78,7 @@
     // === CONFIG: replace these two ===
     const SUPABASE_URL = "https://xqxuccpotbdmqqhxisdf.supabase.co";           // e.g., https://abcdxyz.supabase.co
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxeHVjY3BvdGJkbXFxaHhpc2RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NTg5MjYsImV4cCI6MjA3MDMzNDkyNn0.Jb3LaflzKGT6di_t14FLbGdexQ2lTKQ-dIt5Ve9aP-8";      // anon public key
-
+  
     // Guard: fail early if placeholders are still here
     (function guard(){
       const looksPlaceholder = (s) =>
@@ -91,7 +91,14 @@
       }
     })();
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storageKey: 'listio-auth-v1' // unique key so nothing clashes across your sites
+      }
+    });
 
     let session = null;
     let currentBoardId = null;
@@ -122,8 +129,14 @@
       await supabase.auth.signOut();
     });
 
-    supabase.auth.onAuthStateChange(async (_evt, s) => {
+    supabase.auth.onAuthStateChange(async (event, s) => {
       session = s?.session || null;
+      // Remove #access_token… after signup/login so reloads are clean
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (location.hash.includes('access_token')) {
+          history.replaceState(null, '', location.pathname); // or '/Listio/' if you prefer
+        }
+      }
       authEl.style.display = session ? 'none' : 'grid';
       signoutBtn.style.display = session ? 'inline-flex' : 'none';
       if (session) { await boot(); }
@@ -268,7 +281,8 @@
 
     // Kick off: fetch current session so the overlay hides if already logged in
     (async () => {
-      const { data } = await supabase.auth.getSession();
+      // This will read from localStorage (listio-auth-v1)
+      const { data, error } = await supabase.auth.getSession();
       session = data?.session || null;
       authEl.style.display = session ? 'none' : 'grid';
       signoutBtn.style.display = session ? 'inline-flex' : 'none';
