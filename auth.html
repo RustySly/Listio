@@ -1,39 +1,66 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Listio – Sign In</title>
-  <script src="https://unpkg.com/@supabase/supabase-js"></script>
-  <script src="common.js"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sign in – Listio</title>
+<style>
+  :root{--bg:#f7f8fa;--panel:#fff;--ink:#1f2937;--muted:#9aa3ae;--accent:#2d6cdf;--line:#eceff3}
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;display:grid;place-items:center;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  .card{width:420px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:24px 22px; box-shadow:0 10px 24px rgba(17,24,39,.06)}
+  h1{margin:0 0 6px; font-size:22px}
+  .hint{color:var(--muted); font-size:13px; margin-bottom:16px}
+  label{display:block; font-size:12px; color:var(--muted); margin:10px 0 6px}
+  input{width:100%; padding:12px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; background:#fff}
+  .row{display:flex; gap:8px; margin-top:14px}
+  .btn{all:unset; padding:10px 12px; border-radius:8px; cursor:pointer; text-align:center; border:1px solid var(--line); background:#eef2ff}
+  .btn.primary{background:var(--accent); color:#fff; border-color:transparent}
+  .msg{min-height:16px; color:#c2410c; font-size:12px; margin-top:8px}
+</style>
 </head>
 <body>
-  <h1>Sign in to Listio</h1>
-  <form id="login-form">
-    <input type="email" id="email" placeholder="Email" required />
-    <input type="password" id="password" placeholder="Password" required />
-    <button type="submit">Sign In / Sign Up</button>
-  </form>
+  <div class="card">
+    <h1>Sign in</h1>
+    <div class="hint">Use email + password. We’ll create your account if it doesn’t exist.</div>
 
+    <label>Email</label>
+    <input id="email" type="email" placeholder="you@example.com" autocomplete="email" required />
+
+    <label>Password</label>
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password" required />
+
+    <div class="row">
+      <button id="signin" class="btn primary" style="flex:1">Continue</button>
+      <button id="signup" class="btn" style="flex:1">Create account</button>
+    </div>
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="./common.js"></script>
   <script>
-    const form = document.getElementById('login-form');
+    const msg = document.getElementById('msg');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
+    document.getElementById('signin').onclick = async ()=>{
+      msg.textContent = '…signing in';
+      const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      msg.textContent = error ? error.message : '';
+      if (!error) location.replace('./index.html');
+    };
 
-      // Sign in or sign up
-      let { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        // If no account, create it
-        let { error: signUpError } = await supabase.auth.signUp({ email, password });
-        if (signUpError) {
-          alert(signUpError.message);
-          return;
-        }
-      }
-      window.location.href = 'index.html';
-    });
+    document.getElementById('signup').onclick = async ()=>{
+      msg.textContent = '…creating account';
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const { error } = await supabase.auth.signUp({ email, password });
+      msg.textContent = error ? error.message : 'Check your email to confirm, then return here.';
+    };
+
+    // already signed in? go to app
+    (async ()=>{ const { data } = await supabase.auth.getSession(); if (data?.session) location.replace('./index.html'); })();
   </script>
 </body>
 </html>
