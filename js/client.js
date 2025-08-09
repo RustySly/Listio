@@ -1,7 +1,6 @@
 // /js/client.js
 import { SUPABASE_URL, SUPABASE_ANON_KEY, STORAGE_KEY } from './config.js';
 
-// Use the global loaded by the script tag
 export const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
@@ -10,3 +9,6 @@ export const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON
     storageKey: STORAGE_KEY
   }
 });
+
+// Expose the client so we can inspect it in the console
+window.supabaseClient = supabase;
