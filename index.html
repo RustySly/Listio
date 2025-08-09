@@ -78,8 +78,8 @@
     await supabase.auth.signOut(); localStorage.removeItem(STORAGE_KEY); location.replace(AUTH_URL);
   });
   supabase.auth.onAuthStateChange(async (ev)=>{ if (ev==='SIGNED_OUT') gate(); if (ev==='SIGNED_IN'||ev==='TOKEN_REFRESHED') gate(); });
-  document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') gate().then(loadBoard); });
-  window.addEventListener('focus', ()=>gate().then(loadBoard));
+  // document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') gate().then(loadBoard); });
+  // window.addEventListener('focus', ()=>gate().then(loadBoard));
 
   // --- Data
   let session = null;
