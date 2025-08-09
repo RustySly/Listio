@@ -1,222 +1,142 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Listio</title>
-<style>
-  :root{--line:#eceff3;--accent:#2d6cdf;--muted:#9aa3ae;--ink:#1f2937}
-  *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#f7f8fa;color:var(--ink)}
-  .top{display:flex;gap:8px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);background:#fff}
-  .spacer{flex:1}
-  .btn{all:unset;background:#eef2ff;border:1px solid #d6e6ff;padding:6px 10px;border-radius:6px;cursor:pointer}
-  .app{display:grid;grid-template-columns:240px 1fr;height:calc(100% - 49px)}
-  .sidebar{padding:18px;border-right:1px solid var(--line);background:#fff}
-  .board{height:100%;overflow:auto;padding:16px}
-  #dbg{position:fixed;left:12px;bottom:12px;max-width:600px;padding:8px 10px;background:#fff3cd;border:1px solid #ffe08a;border-radius:8px;font:12px system-ui;color:#533f03;z-index:9999;white-space:pre-wrap;display:none}
-</style>
+  <meta charset="UTF-8" />
+  <title>Listio – Board</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+    header { background: #333; color: #fff; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+    header button { background: #555; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+    #board { display: flex; padding: 10px; gap: 10px; }
+    .column { background: white; border-radius: 4px; padding: 10px; min-width: 200px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .column h2 { font-size: 1.1em; margin-top: 0; }
+    .card { background: #eee; padding: 5px; margin: 5px 0; border-radius: 3px; }
+    button.btn { margin-top: 5px; background: #007bff; color: white; border: none; padding: 5px; border-radius: 3px; cursor: pointer; }
+    button.btn:hover { background: #0056b3; }
+  </style>
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <script src="common.js"></script>
 </head>
 <body>
-  <div class="top">
-    <strong>Listio</strong>
-    <div class="spacer"></div>
-    <div id="who" class="muted"></div>
-    <button id="signout" class="btn" style="display:none">Sign out</button>
-  </div>
 
-  <div class="app">
-    <aside class="sidebar">
-      <div style="font-weight:600;margin-bottom:8px">Your Board</div>
-      <div style="color:var(--muted);font-size:12px">Columns appear on the right</div>
-    </aside>
-    <main class="board">
-      <button id="btn-create-board" class="btn">Create Board</button>
-      <button id="btn-add-column" class="btn">+ Add Column</button>
-    </main>
-  </div>
+<header>
+  <h1>My Board</h1>
+  <button id="sign-out">Sign Out</button>
+</header>
 
-  <div id="dbg"></div>
+<main>
+  <div id="board"></div>
+  <button id="create-board" class="btn">Create Board</button>
+  <button id="add-column" class="btn">Add Column</button>
+</main>
 
-  <!-- Supabase SDK -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-  // --- Supabase config (yours) ---
-  const SUPABASE_URL = "https://xqxuccpotbdmqqhxisdf.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxeHVjY3BvdGJkbXFxaHhpc2RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NTg5MjYsImV4cCI6MjA3MDMzNDkyNn0.Jb3LaflzKGT6di_t14FLbGdexQ2lTKQ-dIt5Ve9aP-8";
-  const STORAGE_KEY   = "listio-auth-v1";
-  const AUTH_URL      = "/Listio/auth.html";
+let session = null;
+let currentBoardId = null;
+const boardEl = document.getElementById('board');
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey: STORAGE_KEY }
+document.addEventListener('DOMContentLoaded', async () => {
+  session = await requireAuth();
+  if (!session) return; // redirected if not logged in
+  await ensureBoard();
+  await loadBoard();
+});
+
+document.getElementById('sign-out').addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  window.location.href = 'auth.html';
+});
+
+document.getElementById('create-board').addEventListener('click', async () => {
+  const { data, error } = await supabase
+    .from('boards')
+    .insert({ owner_id: session.user.id, name: 'New Board' })
+    .select()
+    .single();
+  if (error) {
+    alert('Create board error: ' + error.message);
+    return;
+  }
+  currentBoardId = data.id;
+  await loadBoard();
+});
+
+document.getElementById('add-column').addEventListener('click', async () => {
+  if (!currentBoardId) {
+    alert('Create or select a board first');
+    return;
+  }
+  const { error } = await supabase.from('columns').insert({
+    board_id: currentBoardId,
+    title: 'New Column',
+    owner_id: session.user.id,
+    position: Math.floor(Date.now()/1000)
   });
+  if (error) alert('Insert column failed: ' + error.message);
+});
 
-  // --- UI refs
-  const dbg = document.getElementById('dbg');
-  const who = document.getElementById('who');
-  const signout = document.getElementById('signout');
-  const boardEl = document.querySelector('.board');
-
-  function show(msg){ dbg.textContent = msg; dbg.style.display = 'block'; }
-  function clearDbg(){ dbg.style.display = 'none'; }
-
-  // --- Gate
-  async function gate(){
-    const { data } = await supabase.auth.getSession();
-    const session = data?.session || null;
-    if (!session){
-      show('No session → redirecting to sign in…');
-      signout.style.display = 'none';
-      setTimeout(()=>location.replace(AUTH_URL), 200);
-      return null;
+// Ensure user has a board
+async function ensureBoard() {
+  const { data, error } = await supabase
+    .from('boards')
+    .select()
+    .eq('owner_id', session.user.id)
+    .limit(1)
+    .single();
+  if (error && error.code !== 'PGRST116') {
+    console.error(error);
+    return;
+  }
+  if (!data) {
+    const { data: newBoard, error: createError } = await supabase
+      .from('boards')
+      .insert({ owner_id: session.user.id, name: 'My Board' })
+      .select()
+      .single();
+    if (createError) {
+      console.error(createError);
+      return;
     }
-    who.textContent = session.user.email + ' • ' + session.user.id.slice(0,8);
-    signout.style.display = 'inline-flex';
-    return session;
+    currentBoardId = newBoard.id;
+  } else {
+    currentBoardId = data.id;
   }
-  signout.addEventListener('click', async ()=>{
-    await supabase.auth.signOut(); localStorage.removeItem(STORAGE_KEY); location.replace(AUTH_URL);
+}
+
+// Load board from DB
+async function loadBoard() {
+  if (!currentBoardId) return;
+
+  const { data: columns, error } = await supabase
+    .from('columns')
+    .select('id, title, position')
+    .eq('board_id', currentBoardId)
+    .order('position', { ascending: true });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  boardEl.innerHTML = '';
+  (columns || []).forEach(col => {
+    const colDiv = document.createElement('div');
+    colDiv.className = 'column';
+    colDiv.innerHTML = `<h2>${col.title}</h2>`;
+    boardEl.appendChild(colDiv);
   });
-  supabase.auth.onAuthStateChange(async (ev)=>{ if (ev==='SIGNED_OUT') gate(); if (ev==='SIGNED_IN'||ev==='TOKEN_REFRESHED') gate(); });
-  // document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') gate().then(loadBoard); });
-  // window.addEventListener('focus', ()=>gate().then(loadBoard));
+}
 
-  // --- Data
-  let session = null;
-  let currentBoardId = null;
+// Real-time updates for columns
+supabase
+  .channel('realtime:columns')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'columns' }, payload => {
+    if (payload.new && payload.new.board_id === currentBoardId) {
+      loadBoard();
+    }
+  })
+  .subscribe();
 
-  async function ensureBoard(){
-    const s = await gate(); if (!s) return null; session = s;
-    const uid = s.user.id;
-    const { data: boards, error } = await supabase.from('boards').select('*').eq('owner_id', uid).limit(1);
-    if (error){ show('Load boards error: ' + error.message); return null; }
-    if (boards?.length){ currentBoardId = boards[0].id; return currentBoardId; }
-    const { data: created, error: cErr } = await supabase
-      .from('boards').insert({ title: 'My Board', owner_id: uid }).select('*').single();
-    if (cErr){ show('Create board error: ' + cErr.message); return null; }
-    currentBoardId = created.id; return currentBoardId;
-  }
-
-  async function loadBoard(){
-    clearDbg();
-    const id = currentBoardId || await ensureBoard();
-    if (!id) return;
-
-    // fetch columns
-    const { data: columns, error } = await supabase
-      .from('columns').select('id, title, position').eq('board_id', id).order('position', { ascending: true });
-    if (error){ show('Load columns error: ' + error.message); return; }
-
-    // render
-    boardEl.innerHTML = '';
-    (columns || []).forEach(c => boardEl.appendChild(renderColumn(c)));
-
-    // add column button
-    const add = document.createElement('button');
-    add.className = 'btn';
-    add.textContent = '+ Add Column';
-    add.onclick = async ()=>{
-      const { error } = await supabase.from('columns').insert({
-        board_id: currentBoardId,
-        title: 'New Column',
-        owner_id: session.user.id,
-        position: Math.floor(Date.now()/1000)
-      });
-      if (error) show('Insert column failed: ' + error.message);
-    };
-    boardEl.prepend(add);
-  }
-
-  function renderColumn(col){
-    const wrap = document.createElement('div');
-    wrap.className = 'column';
-    wrap.style.marginLeft = '12px';
-    wrap.innerHTML = `
-      <div class="col-header">
-        <div class="col-title" contenteditable="true">${col.title}</div>
-        <div class="col-actions" style="margin-left:auto;display:flex;gap:4px">
-          <button class="icon-btn" title="Delete">🗑</button>
-        </div>
-      </div>
-      <div class="cards"></div>
-      <div class="adder">
-        <input placeholder="Add a card..." />
-        <button class="btn">Add</button>
-      </div>
-    `;
-
-    // title edit
-    const titleEl = wrap.querySelector('.col-title');
-    titleEl.addEventListener('blur', async ()=>{
-      const newTitle = titleEl.textContent.trim() || 'Untitled';
-      const { error } = await supabase.from('columns').update({ title: newTitle }).eq('id', col.id);
-      if (error) show('Rename column failed: ' + error.message);
-    });
-
-    // delete column
-    wrap.querySelector('.icon-btn').onclick = async ()=>{
-      const { error } = await supabase.from('columns').delete().eq('id', col.id);
-      if (error) show('Delete column failed: ' + error.message);
-    };
-
-    // load cards
-    (async ()=>{
-      const { data: cards, error } = await supabase
-        .from('cards').select('*').eq('column_id', col.id).order('position', { ascending: true });
-      if (error){ show('Load cards error: ' + error.message); return; }
-      const cardsEl = wrap.querySelector('.cards');
-      (cards || []).forEach(card => cardsEl.appendChild(renderCard(card)));
-    })();
-
-    // add card
-    const input = wrap.querySelector('.adder input');
-    wrap.querySelector('.adder button').onclick = async ()=>{
-      const text = input.value.trim(); if (!text) return;
-      const { error } = await supabase.from('cards').insert({
-        column_id: col.id, text, position: Math.floor(Date.now()/1000), created_by: session.user.id
-      });
-      if (error) show('Add card failed: ' + error.message);
-      else input.value = '';
-    };
-
-    return wrap;
-  }
-
-  function renderCard(card){
-    const el = document.createElement('div');
-    el.className = 'card';
-    el.innerHTML = `
-      <input class="checkbox" type="checkbox" ${card.checked ? 'checked' : ''}/>
-      <div class="card-text" contenteditable="true">${card.text || ''}</div>
-      <div class="meta"></div>
-    `;
-    el.querySelector('.checkbox').addEventListener('change', async (e)=>{
-      const { error } = await supabase.from('cards').update({ checked: e.target.checked }).eq('id', card.id);
-      if (error) show('Toggle card failed: ' + error.message);
-    });
-    el.querySelector('.card-text').addEventListener('blur', async (e)=>{
-      const { error } = await supabase.from('cards').update({ text: e.target.textContent }).eq('id', card.id);
-      if (error) show('Edit card failed: ' + error.message);
-    });
-    return el;
-  }
-
-  // Realtime
-  function subscribeRealtime(){
-    supabase.channel('columns-ch')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'columns' }, () => loadBoard())
-      .subscribe();
-    supabase.channel('cards-ch')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, () => loadBoard())
-      .subscribe();
-  }
-
-  // Start
-  (async ()=>{
-    const s = await gate(); if (!s) return;
-    session = s;
-    await ensureBoard();
-    subscribeRealtime();
-    await loadBoard();
-  })();
 </script>
+</body>
+</html>
