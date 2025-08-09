@@ -3,18 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Boards – Minimal Columns</title>
+<title>Columns – Listio</title>
 <style>
   :root {
     --bg:#f7f8fa; --panel:#ffffff; --ink:#1f2937; --muted:#9aa3ae; --accent:#2d6cdf;
     --line:#eceff3; --pill-bg:#eef3ff; --ok:#16a34a; --warn:#f59e0b; --danger:#ef4343;
   }
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;}
-  .app{display:grid;grid-template-columns:240px 1fr;height:100%}
-  .sidebar{padding:18px;border-right:1px solid var(--line);background:var(--bg)}
-  .brand{font-weight:700;font-size:22px;letter-spacing:-0.02em}
-  .board{height:calc(100% - 0px);overflow:auto;padding:16px;display:flex;gap:16px;background:#fafafa}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  .top{display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--line);background:#fff}
+  .brand{font-weight:700;font-size:18px}
+  .spacer{flex:1}
+  .btn{all:unset;background:#eef2ff;border:1px solid #d6e6ff;padding:6px 10px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px}
+  .btn:hover{background:#e7edff}
+
+  .app{display:grid;grid-template-columns:240px 1fr;height:calc(100% - 49px)}
+  .sidebar{padding:18px;border-right:1px solid var(--line);background:#fff}
+  .board{height:100%;overflow:auto;padding:16px;display:flex;gap:16px;background:#fafafa}
+
   .column{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:280px;max-width:320px;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(17,24,39,.06)}
   .col-header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
   .col-title{font-weight:600;font-size:14px;padding:4px;border-radius:4px}
@@ -29,8 +35,7 @@
   .pill-date{font-size:11px;color:#d11f3e;background:#ffecee;padding:2px 6px;border-radius:999px}
   .adder{border-top:1px dashed var(--line);padding:8px;display:flex;gap:6px}
   .adder input{flex:1;border:1px solid var(--line);border-radius:4px;padding:8px;background:transparent;color:var(--ink);font-size:13px}
-  .btn{all:unset;background:#eef2ff;border:1px solid #d6e6ff;padding:6px 10px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px}
-  .btn:hover{background:#e7edff}
+
   /* auth overlay */
   #auth{position:fixed;inset:0;display:grid;place-items:center;background:#fff}
   #auth form{display:grid;gap:10px;width:320px;padding:24px;border:1px solid var(--line);border-radius:10px;background:#fff;box-shadow:0 10px 24px rgba(17,24,39,.06)}
@@ -40,8 +45,6 @@
   #auth button{padding:10px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer}
   #auth .link{background:#eef2ff;color:#1e40af;text-align:center}
   #auth .msg{color:#d11f3e;font-size:12px;height:14px}
-  .top{display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--line);background:#fff}
-  .spacer{flex:1}
 </style>
 </head>
 <body>
@@ -72,111 +75,151 @@
     </form>
   </div>
 
-  <!-- Supabase SDK -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
-    // === CONFIG: replace these two ===
-    const SUPABASE_URL = "https://xqxuccpotbdmqqhxisdf.supabase.co";           // e.g., https://abcdxyz.supabase.co
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxeHVjY3BvdGJkbXFxaHhpc2RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NTg5MjYsImV4cCI6MjA3MDMzNDkyNn0.Jb3LaflzKGT6di_t14FLbGdexQ2lTKQ-dIt5Ve9aP-8";      // anon public key
-  
-    // Guard: fail early if placeholders are still here
-    (function guard(){
-      const looksPlaceholder = (s) =>
-        !s || /YOUR_SUPABASE_URL|YOUR_SUPABASE_ANON_KEY|^https?:\/\/.+\.supabase\.co$/.test(s) === false
-          ? false : false; // not reliable; show explicit helper below
-      if (!SUPABASE_URL || SUPABASE_URL.includes("YOUR_SUPABASE_URL") ||
-          !SUPABASE_KEY || SUPABASE_KEY.includes("YOUR_SUPABASE_ANON_KEY")) {
-        document.getElementById('auth-msg').textContent =
-          "Missing Supabase URL/key. Add your project URL and anon key (Settings → API).";
-      }
-    })();
+    // === Supabase config (your keys) ===
+    const SUPABASE_URL = "https://xqxuccpotbdmqqhxisdf.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxeHVjY3BvdGJkbXFxaHhpc2RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NTg5MjYsImV4cCI6MjA3MDMzNDkyNn0.Jb3LaflzKGT6di_t14FLbGdexQ2lTKQ-dIt5Ve9aP-8";
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storageKey: 'listio-auth-v1' // unique key so nothing clashes across your sites
+        storageKey: 'listio-auth-v1'
       }
     });
 
-    let session = null;
-    let currentBoardId = null;
+    // === Debug helper ===
+    function ensureDbg(){
+      let el = document.getElementById('dbg'); 
+      if (!el){ el = document.createElement('div'); el.id='dbg';
+        el.style.cssText='position:fixed;right:12px;bottom:12px;max-width:520px;padding:10px 12px;background:#fff3cd;border:1px solid #ffe08a;border-radius:8px;font:12px system-ui;color:#533f03;z-index:9999;display:none;white-space:pre-wrap';
+        document.body.appendChild(el);
+      }
+      return el;
+    }
+    function showDbg(msg){ const el=ensureDbg(); el.textContent=msg; el.style.display='block'; console.warn('[Listio]', msg); }
+    function hideDbg(){ const el=document.getElementById('dbg'); if(el) el.style.display='none'; }
 
-    // ===== Auth UI =====
+    // === UI refs ===
+    let session = null, currentBoardId = null;
     const authEl = document.getElementById('auth');
     const authMsg = document.getElementById('auth-msg');
     const signoutBtn = document.getElementById('signout');
+    function setUIFromSession(s){
+      const isIn = !!s;
+      authEl.style.display = isIn ? 'none' : 'grid';
+      signoutBtn.style.display = isIn ? 'inline-flex' : 'none';
+    }
 
+    // === Auth form actions ===
     document.getElementById('auth-form').addEventListener('submit', async (e)=>{
       e.preventDefault();
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       authMsg.textContent = "";
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) authMsg.textContent = error.message;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) { authMsg.textContent = error.message; return; }
+      // optimistic UI
+      const { data } = await supabase.auth.getSession();
+      session = data?.session || null;
+      setUIFromSession(session);
+      if (session) await boot();
     });
 
     document.getElementById('signup').addEventListener('click', async ()=>{
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       authMsg.textContent = "";
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({ email, password });
       authMsg.textContent = error ? error.message : "Check your email to confirm your account.";
     });
 
-    signoutBtn.addEventListener('click', async ()=>{
-      await supabase.auth.signOut();
-    });
+    signoutBtn.addEventListener('click', async ()=>{ await supabase.auth.signOut(); });
 
+    // === Flicker-free auth state handling ===
+    let signedOutTimer = null;
     supabase.auth.onAuthStateChange(async (event, s) => {
-      session = s?.session || null;
-      // Remove #access_token… after signup/login so reloads are clean
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        session = s?.session || (await supabase.auth.getSession()).data.session;
+        setUIFromSession(session);
         if (location.hash.includes('access_token')) {
-          history.replaceState(null, '', location.pathname); // or '/Listio/' if you prefer
+          history.replaceState(null, '', location.pathname);
         }
+        if (session) await boot();
+        return;
       }
-      authEl.style.display = session ? 'none' : 'grid';
-      signoutBtn.style.display = session ? 'inline-flex' : 'none';
-      if (session) { await boot(); }
+      if (event === 'SIGNED_OUT') {
+        clearTimeout(signedOutTimer);
+        signedOutTimer = setTimeout(async () => {
+          const { data } = await supabase.auth.getSession();
+          session = data?.session || null;
+          setUIFromSession(session);
+          if (session) await boot();
+        }, 250);
+      }
     });
 
-    // ===== Data layer =====
+    // Refresh session on tab return (extra guard)
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') {
+        const { data } = await supabase.auth.getSession();
+        session = data?.session || null;
+        setUIFromSession(session);
+        if (session) await boot();
+      }
+    });
+    window.addEventListener('focus', async () => {
+      const { data } = await supabase.auth.getSession();
+      session = data?.session || null;
+      setUIFromSession(session);
+      if (session) await boot();
+    });
+
+    // Initial load
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      session = data?.session || null;
+      setUIFromSession(session);
+      if (session) await boot();
+    })();
+
+    // === Data layer ===
     async function boot(){
-      // Ensure one board
-      let { data: boards, error: bErr } = await supabase
+      hideDbg();
+      const { data: boards, error: bErr } = await supabase
         .from('boards').select('*').eq('owner_id', session.user.id).limit(1);
-      if (bErr) { console.error(bErr); return; }
-      if (!boards || boards.length === 0) {
+      if (bErr){ showDbg('Load boards error: ' + bErr.message); return; }
+
+      if (!boards || boards.length === 0){
         const { data: created, error: cErr } = await supabase
-          .from('boards').insert({ title: 'My Board', owner_id: session.user.id })
-          .select('*').single();
-        if (cErr) { console.error(cErr); return; }
+          .from('boards').insert({ title: 'My Board', owner_id: session.user.id }).select('*').single();
+        if (cErr){ showDbg('Create board error: ' + cErr.message); return; }
         currentBoardId = created.id;
       } else {
         currentBoardId = boards[0].id;
       }
+
       await loadColumns();
       subscribeRealtime();
     }
 
     async function loadColumns(){
       const { data: columns, error } = await supabase
-        .from('columns')
-        .select('id, title, position')
-        .eq('board_id', currentBoardId)
-        .order('position', { ascending: true });
-      if (error) { console.error(error); return; }
+        .from('columns').select('id, title, position')
+        .eq('board_id', currentBoardId).order('position', { ascending: true });
+      if (error){ showDbg('Load columns error: ' + error.message); return; }
 
       const boardEl = document.querySelector('.board');
       boardEl.innerHTML = '';
 
-      for (const col of columns) {
+      for (const col of (columns || [])) {
         const colEl = renderColumn(col);
         boardEl.appendChild(colEl);
-        const { data: cards } = await supabase
+        const { data: cards, error: cardErr } = await supabase
           .from('cards').select('*').eq('column_id', col.id).order('position', { ascending: true });
+        if (cardErr){ showDbg('Load cards error: ' + cardErr.message); }
         const cardsEl = colEl.querySelector('.cards');
         (cards || []).forEach(card => cardsEl.appendChild(renderCard(card)));
       }
@@ -185,9 +228,14 @@
       add.className = 'btn';
       add.textContent = '+ Add Column';
       add.onclick = async ()=>{
-        await supabase.from('columns').insert({
-          board_id: currentBoardId, title: 'New Column', owner_id: session.user.id, position: Date.now()
+        if (!currentBoardId){ showDbg('No board id (board create/select failed).'); return; }
+        const { error } = await supabase.from('columns').insert({
+          board_id: currentBoardId,
+          title: 'New Column',
+          owner_id: session.user.id,
+          position: Math.floor(Date.now()/1000) // smaller than 32-bit max
         });
+        if (error){ showDbg('Insert column failed: ' + error.message); }
       };
       boardEl.appendChild(add);
     }
@@ -210,30 +258,29 @@
         </div>
       `;
 
-      // title edit
-      const titleEl = wrap.querySelector('.col-title');
-      titleEl.addEventListener('blur', async ()=>{
-        const newTitle = titleEl.textContent.trim() || 'Untitled';
-        await supabase.from('columns').update({ title: newTitle }).eq('id', col.id);
+      wrap.querySelector('.col-title').addEventListener('blur', async ()=>{
+        const newTitle = wrap.querySelector('.col-title').textContent.trim() || 'Untitled';
+        const { error } = await supabase.from('columns').update({ title: newTitle }).eq('id', col.id);
+        if (error){ showDbg('Rename column failed: ' + error.message); }
       });
 
       // delete
       wrap.querySelectorAll('.icon-btn')[1].onclick = async ()=>{
-        await supabase.from('columns').delete().eq('id', col.id);
+        const { error } = await supabase.from('columns').delete().eq('id', col.id);
+        if (error){ showDbg('Delete column failed: ' + error.message); }
       };
 
-      // share
+      // share (manual user_id for now)
       wrap.querySelectorAll('.icon-btn')[0].onclick = ()=> openShareDialog(col.id);
 
       // add card
       const input = wrap.querySelector('.adder input');
-      const btn = wrap.querySelector('.adder button');
-      btn.onclick = async ()=>{
-        const text = input.value.trim();
-        if (!text) return;
-        await supabase.from('cards').insert({
-          column_id: col.id, text, position: Date.now(), created_by: session.user.id
+      wrap.querySelector('.adder button').onclick = async ()=>{
+        const text = input.value.trim(); if (!text) return;
+        const { error } = await supabase.from('cards').insert({
+          column_id: col.id, text, position: Math.floor(Date.now()/1000), created_by: session.user.id
         });
+        if (error){ showDbg('Add card failed: ' + error.message); }
         input.value = '';
       };
 
@@ -249,10 +296,12 @@
         <div class="meta"><span class="pill-date">${card.due_date || ''}</span></div>
       `;
       el.querySelector('.checkbox').addEventListener('change', async (e)=>{
-        await supabase.from('cards').update({ checked: e.target.checked }).eq('id', card.id);
+        const { error } = await supabase.from('cards').update({ checked: e.target.checked }).eq('id', card.id);
+        if (error){ showDbg('Toggle card failed: ' + error.message); }
       });
       el.querySelector('.card-text').addEventListener('blur', async (e)=>{
-        await supabase.from('cards').update({ text: e.target.textContent }).eq('id', card.id);
+        const { error } = await supabase.from('cards').update({ text: e.target.textContent }).eq('id', card.id);
+        if (error){ showDbg('Edit card failed: ' + error.message); }
       });
       return el;
     }
@@ -266,28 +315,17 @@
         .subscribe();
     }
 
-    // Basic share dialog (manual user_id for now)
     function openShareDialog(columnId){
       const email = prompt('Enter collaborator email (ask them to sign up first)');
       if (!email) return;
       const role = prompt("Role? Type 'viewer' or 'editor'", 'viewer');
       if (!role || !['viewer','editor'].includes(role)) return alert('Invalid role');
-      alert('For now, paste their user_id (we will automate later via Edge Function).');
+      alert('For now, paste their user_id (we will automate later).');
       const userId = prompt('Paste collaborator user_id');
       if (!userId) return;
       supabase.from('column_access').insert({ column_id: columnId, user_id: userId, role })
         .then(({ error }) => alert(error ? error.message : 'Shared!'));
     }
-
-    // Kick off: fetch current session so the overlay hides if already logged in
-    (async () => {
-      // This will read from localStorage (listio-auth-v1)
-      const { data, error } = await supabase.auth.getSession();
-      session = data?.session || null;
-      authEl.style.display = session ? 'none' : 'grid';
-      signoutBtn.style.display = session ? 'inline-flex' : 'none';
-      if (session) await boot();
-    })();
   </script>
 </body>
 </html>
