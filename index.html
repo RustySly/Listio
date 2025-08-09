@@ -14,7 +14,7 @@
   .app{display:grid;grid-template-columns:240px 1fr;height:calc(100% - 49px)}
   .sidebar{padding:18px;border-right:1px solid var(--line);background:#fff}
   .board{height:100%;overflow:auto;padding:16px}
-  #dbg{position:fixed;left:12px;bottom:12px;max-width:600px;padding:8px 10px;background:#fff3cd;border:1px solid #ffe08a;border-radius:8px;font:12px system-ui;color:#533f03;z-index:9999;white-space:pre-wrap}
+  #dbg{position:fixed;left:12px;bottom:12px;max-width:600px;padding:8px 10px;background:#fff3cd;border:1px solid #ffe08a;border-radius:8px;font:12px system-ui;color:#533f03;z-index:9999;white-space:pre-wrap;display:none}
 </style>
 </head>
 <body>
@@ -36,38 +36,46 @@
     </main>
   </div>
 
-  <div id="dbg" style="display:none"></div>
+  <div id="dbg"></div>
 
   <!-- Supabase SDK -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
+    // --- Supabase config (yours) ---
     const SUPABASE_URL = "https://xqxuccpotbdmqqhxisdf.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxeHVjY3BvdGJkbXFxaHhpc2RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NTg5MjYsImV4cCI6MjA3MDMzNDkyNn0.Jb3LaflzKGT6di_t14FLbGdexQ2lTKQ-dIt5Ve9aP-8";
-    const STORAGE_KEY = "listio-auth-v1";
-    const AUTH_URL = "/Listio/auth.html";
+    const STORAGE_KEY   = "listio-auth-v1";
+    const AUTH_URL      = "/Listio/auth.html";
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey: STORAGE_KEY }
     });
 
+    // --- UI refs
     const dbg = document.getElementById('dbg');
     const who = document.getElementById('who');
     const signout = document.getElementById('signout');
+    const btnCreate = document.getElementById('btn-create-board');
+    const btnAddCol = document.getElementById('btn-add-column');
 
     function show(msg){ dbg.textContent = msg; dbg.style.display = 'block'; }
 
+    // --- Gate: ensure session, show "Sign out" + who
     async function gate(){
       const { data } = await supabase.auth.getSession();
       const session = data?.session || null;
+
       if (!session){
         show('No session → redirecting to sign in…');
+        signout.style.display = 'none';
         setTimeout(()=>location.replace(AUTH_URL), 300);
-        return;
+        return null;
       }
-      // show who’s signed in
+
       who.textContent = session.user.email + ' • ' + session.user.id.slice(0,8);
       signout.style.display = 'inline-flex';
       show('SESSION OK. You are signed in. (No database calls yet.)');
+      return session;
     }
 
     signout.addEventListener('click', async ()=>{
@@ -76,63 +84,53 @@
       location.replace(AUTH_URL);
     });
 
-    // Guard against tab-switch flicker
-    supabase.auth.onAuthStateChange(async (ev, s)=>{
+    // Handle tab switch/flicker
+    supabase.auth.onAuthStateChange(async (ev)=>{
       if (ev === 'SIGNED_OUT'){ setTimeout(gate, 200); }
       if (ev === 'SIGNED_IN' || ev === 'TOKEN_REFRESHED'){ setTimeout(gate, 0); }
     });
     document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') gate(); });
     window.addEventListener('focus', gate);
 
-    gate();
+    // --- Minimal DB test handlers
+    let currentBoardId = null;
 
-    <script>
-      // --- Minimal DB test handlers ---
-      const btnCreate = document.getElementById('btn-create-board');
-      const btnAddCol = document.getElementById('btn-add-column');
-    
-      // helper to show messages in the yellow box you already see
-      function show(msg){ const el = document.getElementById('dbg'); el.textContent = msg; el.style.display='block'; }
-    
-      let currentBoardId = null;
-    
-      // ask the DB for your board (once)
-      async function ensureBoard(){
-        const { data: sess } = await supabase.auth.getSession();
-        const uid = sess.session.user.id;
-    
-        // try to fetch an existing one
-        const { data: boards, error, status } = await supabase
-          .from('boards').select('*').eq('owner_id', uid).limit(1);
-    
-        if (error) { show(`Load boards error (${status}): ${error.message}`); return null; }
-        if (boards && boards.length) { currentBoardId = boards[0].id; return currentBoardId; }
-    
-        // create one if missing
-        const { data: created, error: cErr, status: cStatus } = await supabase
-          .from('boards').insert({ title: 'My Board', owner_id: uid }).select('*').single();
-    
-        if (cErr) { show(`Create board error (${cStatus}): ${cErr.message}`); return null; }
-        currentBoardId = created.id;
-        show(`Board created ✔ (${currentBoardId.slice(0,8)})`);
-        return currentBoardId;
-      }
-    
-      btnCreate.onclick = async ()=>{ await ensureBoard(); };
-    
-      btnAddCol.onclick = async ()=>{
-        const id = currentBoardId || await ensureBoard();
-        if (!id) return;
-        const { error, status } = await supabase.from('columns').insert({
-          board_id: id,
-          title: 'New Column',
-          owner_id: (await supabase.auth.getUser()).data.user.id,
-          position: Math.floor(Date.now()/1000)
-        });
-        if (error) show(`Insert column failed (${status}): ${error.message}`);
-        else show('Column created ✔');
-      };
-    </script>
+    async function ensureBoard(){
+      const s = await gate(); if (!s) return null;
+      const uid = s.user.id;
+
+      const { data: boards, error, status } = await supabase
+        .from('boards').select('*').eq('owner_id', uid).limit(1);
+
+      if (error) { show(`Load boards error (${status}): ${error.message}`); return null; }
+      if (boards && boards.length){ currentBoardId = boards[0].id; show('Board found ✔'); return currentBoardId; }
+
+      const { data: created, error: cErr, status: cStatus } = await supabase
+        .from('boards').insert({ title: 'My Board', owner_id: uid }).select('*').single();
+
+      if (cErr) { show(`Create board error (${cStatus}): ${cErr.message}`); return null; }
+      currentBoardId = created.id;
+      show(`Board created ✔ (${currentBoardId.slice(0,8)})`);
+      return currentBoardId;
+    }
+
+    btnCreate.onclick = async ()=>{ await ensureBoard(); };
+
+    btnAddCol.onclick = async ()=>{
+      const id = currentBoardId || await ensureBoard();
+      if (!id) return;
+      const { error, status } = await supabase.from('columns').insert({
+        board_id: id,
+        title: 'New Column',
+        owner_id: (await supabase.auth.getUser()).data.user.id,
+        position: Math.floor(Date.now()/1000)
+      });
+      if (error) show(`Insert column failed (${status}): ${error.message}`);
+      else show('Column created ✔');
+    };
+
+    // kick off
+    gate();
   </script>
 </body>
 </html>
