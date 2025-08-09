@@ -1,66 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Columns – Listio</title>
-<link href="https://fonts.googleapis.com/css2?family=Encode+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Listio</title>
 <style>
-  :root {
-    --bg:#f7f8fa; --panel:#ffffff; --ink:#1f2937; --muted:#9aa3ae; --accent:#2d6cdf;
-    --line:#eceff3; --pill-bg:#eef3ff; --ok:#16a34a; --warn:#f59e0b; --danger:#ef4343;
-  }
+  :root{--line:#eceff3;--accent:#2d6cdf;--muted:#9aa3ae;--ink:#1f2937}
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  .top{display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--line);background:#fff}
-  .brand{font-weight:700;font-size:18px}
+  body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#f7f8fa;color:var(--ink)}
+  .top{display:flex;gap:8px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);background:#fff}
   .spacer{flex:1}
-  .btn{all:unset;background:#eef2ff;border:1px solid #d6e6ff;padding:6px 10px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px}
-  .btn:hover{background:#e7edff}
-
+  .btn{all:unset;background:#eef2ff;border:1px solid #d6e6ff;padding:6px 10px;border-radius:6px;cursor:pointer}
   .app{display:grid;grid-template-columns:240px 1fr;height:calc(100% - 49px)}
   .sidebar{padding:18px;border-right:1px solid var(--line);background:#fff}
   .board{height:100%;overflow:auto;padding:16px;display:flex;gap:16px;background:#fafafa}
-
-  .column{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:280px;max-width:320px;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(17,24,39,.06)}
-  .col-header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
-  /* UPDATED: bigger, bold, condensed title */
-  .col-title{font-family:"Encode Sans Condensed", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-weight:700; font-size:22px; line-height:1.1; padding:2px 4px; border-radius:4px; letter-spacing:.2px}
-  .col-title[contenteditable="true"]:focus{outline:1px solid var(--accent);background:var(--pill-bg)}
+  .column{background:#fff;border:1px solid var(--line);border-radius:8px;min-width:280px;max-width:320px;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(17,24,39,.06)}
+  .col-header{display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .col-title{font-weight:600;font-size:14px;padding:4px;border-radius:4px}
+  .col-title[contenteditable="true"]:focus{outline:1px solid var(--accent);background:#eef3ff}
   .col-actions{margin-left:auto;display:flex;gap:4px}
-  .icon-btn{all:unset;width:24px;height:24px;border-radius:4px;display:grid;place-items:center;cursor:pointer;border:1px solid var(--line);font-size:12px;color:var(--muted)}
-  .icon-btn:hover{background:#f5f5f5}
+  .icon-btn{all:unset;width:24px;height:24px;display:grid;place-items:center;border:1px solid var(--line);border-radius:4px;color:#6b7280;cursor:pointer}
   .cards{display:flex;flex-direction:column;gap:8px;padding:10px;min-height:50px}
-  .card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px;display:grid;grid-template-columns:auto 1fr auto;align-items:flex-start;gap:8px}
-  .checkbox{width:16px;height:16px;accent-color:var(--accent)}
-  .card-text{white-space:pre-wrap;outline:none;font-size:13px}
-  .pill-date{font-size:11px;color:#d11f3e;background:#ffecee;padding:2px 6px;border-radius:999px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px;display:grid;grid-template-columns:auto 1fr auto;gap:8px}
   .adder{border-top:1px dashed var(--line);padding:8px;display:flex;gap:6px}
-  .adder input{flex:1;border:1px solid var(--line);border-radius:4px;padding:8px;background:transparent;color:var(--ink);font-size:13px}
-
-  /* auth overlay */
-  #auth{position:fixed;inset:0;display:grid;place-items:center;background:#fff}
-  #auth form{display:grid;gap:10px;width:320px;padding:24px;border:1px solid var(--line);border-radius:10px;background:#fff;box-shadow:0 10px 24px rgba(17,24,39,.06)}
-  #auth h2{margin:0 0 4px 0}
-  #auth .hint{color:var(--muted);font-size:12px;margin-bottom:4px}
-  #auth input{padding:10px;border:1px solid var(--line);border-radius:6px;font-size:14px}
-  #auth button{padding:10px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer}
-  #auth .link{background:#eef2ff;color:#1e40af;text-align:center}
-  #auth .msg{color:#d11f3e;font-size:12px;height:14px}
-
-  /* NEW: Add Column tile (plus only, hover reveals label + soft card) */
-  .add-column{position:relative;display:grid;place-items:center;min-width:280px;max-width:320px;width:320px;min-height:520px;border:1px dashed transparent;border-radius:8px;background:transparent;color:var(--ink);cursor:pointer;transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease}
-  .addcol-plus{font-size:28px;line-height:1;transform:translateY(-2px);opacity:.9;transition:transform .18s ease,opacity .18s ease}
-  .addcol-label{position:absolute;bottom:50%;transform:translateY(24px);font-size:14px;color:#6b7280;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
-  .add-column:hover,.add-column:focus-visible{background:#f3f4f6;border-color:#e5e7eb;box-shadow:inset 0 0 0 1px rgba(0,0,0,.03)}
-  .add-column:hover .addcol-label,.add-column:focus-visible .addcol-label{opacity:1;transform:translateY(32px)}
-  .add-column:hover .addcol-plus,.add-column:focus-visible .addcol-plus{transform:translateY(-4px)}
-
+  .adder input{flex:1;border:1px solid var(--line);border-radius:4px;padding:8px}
+  #authGate{position:fixed;inset:0;display:none;place-items:center;background:#fff}
 </style>
 </head>
 <body>
   <div class="top">
-    <div class="brand">Columns</div>
+    <strong>Listio</strong>
     <div class="spacer"></div>
     <button id="signout" class="btn" style="display:none">Sign out</button>
   </div>
@@ -68,278 +37,14 @@
   <div class="app">
     <aside class="sidebar">
       <div style="font-weight:600;margin-bottom:8px">Your Board</div>
-      <div class="hint" style="color:var(--muted);font-size:12px">Columns appear on the right</div>
+      <div style="color:var(--muted);font-size:12px">Columns appear on the right</div>
     </aside>
     <main class="board"></main>
   </div>
 
-  <!-- Auth overlay -->
-  <div id="auth">
-    <form id="auth-form">
-      <h2>Sign in</h2>
-      <div class="hint">Use email + password. We'll create your account if it doesn't exist.</div>
-      <input id="email" type="email" placeholder="you@example.com" required />
-      <input id="password" type="password" placeholder="Password" required />
-      <button id="signin" type="submit">Continue</button>
-      <button id="signup" type="button" class="link">Create account</button>
-      <div class="msg" id="auth-msg"></div>
-    </form>
-  </div>
+  <!-- Only shown if no session; redirects to /auth.html -->
+  <div id="authGate"><div>Redirecting to sign in…</div></div>
 
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script>
-    // === Supabase config (your keys) ===
-    const SUPABASE_URL = "https://xqxuccpotbdmqqhxisdf.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxeHVjY3BvdGJkbXFxaHhpc2RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NTg5MjYsImV4cCI6MjA3MDMzNDkyNn0.Jb3LaflzKGT6di_t14FLbGdexQ2lTKQ-dIt5Ve9aP-8";
-
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storageKey: 'listio-auth-v1'
-      }
-    });
-
-    // === Debug helper ===
-    function ensureDbg(){
-      let el = document.getElementById('dbg'); 
-      if (!el){ el = document.createElement('div'); el.id='dbg';
-        el.style.cssText='position:fixed;right:12px;bottom:12px;max-width:520px;padding:10px 12px;background:#fff3cd;border:1px solid #ffe08a;border-radius:8px;font:12px system-ui;color:#533f03;z-index:9999;display:none;white-space:pre-wrap';
-        document.body.appendChild(el);
-      }
-      return el;
-    }
-    function showDbg(msg){ const el=ensureDbg(); el.textContent=msg; el.style.display='block'; console.warn('[Listio]', msg); }
-    function hideDbg(){ const el=document.getElementById('dbg'); if(el) el.style.display='none'; }
-
-    // === UI refs ===
-    let session = null, currentBoardId = null;
-    const authEl = document.getElementById('auth');
-    const authMsg = document.getElementById('auth-msg');
-    const signoutBtn = document.getElementById('signout');
-    function setUIFromSession(s){
-      const isIn = !!s;
-      authEl.style.display = isIn ? 'none' : 'grid';
-      signoutBtn.style.display = isIn ? 'inline-flex' : 'none';
-    }
-
-    // === Auth form actions ===
-    document.getElementById('auth-form').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      authMsg.textContent = "";
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { authMsg.textContent = error.message; return; }
-      // optimistic UI
-      const { data } = await supabase.auth.getSession();
-      session = data?.session || null;
-      setUIFromSession(session);
-      if (session) await boot();
-    });
-
-    document.getElementById('signup').addEventListener('click', async ()=>{
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      authMsg.textContent = "";
-      const { error } = await supabase.auth.signUp({ email, password });
-      authMsg.textContent = error ? error.message : "Check your email to confirm your account.";
-    });
-
-    signoutBtn.addEventListener('click', async ()=>{ await supabase.auth.signOut(); });
-
-    // === Flicker-free auth state handling ===
-    let signedOutTimer = null;
-    supabase.auth.onAuthStateChange(async (event, s) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        session = s?.session || (await supabase.auth.getSession()).data.session;
-        setUIFromSession(session);
-        if (location.hash.includes('access_token')) {
-          history.replaceState(null, '', location.pathname);
-        }
-        if (session) await boot();
-        return;
-      }
-      if (event === 'SIGNED_OUT') {
-        clearTimeout(signedOutTimer);
-        signedOutTimer = setTimeout(async () => {
-          const { data } = await supabase.auth.getSession();
-          session = data?.session || null;
-          setUIFromSession(session);
-          if (session) await boot();
-        }, 250);
-      }
-    });
-
-    // Refresh session on tab return (extra guard)
-    document.addEventListener('visibilitychange', async () => {
-      if (document.visibilityState === 'visible') {
-        const { data } = await supabase.auth.getSession();
-        session = data?.session || null;
-        setUIFromSession(session);
-        if (session) await boot();
-      }
-    });
-    window.addEventListener('focus', async () => {
-      const { data } = await supabase.auth.getSession();
-      session = data?.session || null;
-      setUIFromSession(session);
-      if (session) await boot();
-    });
-
-    // Initial load
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      session = data?.session || null;
-      setUIFromSession(session);
-      if (session) await boot();
-    })();
-
-    // === Data layer ===
-    async function boot(){
-      hideDbg();
-      const { data: boards, error: bErr } = await supabase
-        .from('boards').select('*').eq('owner_id', session.user.id).limit(1);
-      if (bErr){ showDbg('Load boards error: ' + bErr.message); return; }
-
-      if (!boards || boards.length === 0){
-        const { data: created, error: cErr } = await supabase
-          .from('boards').insert({ title: 'My Board', owner_id: session.user.id }).select('*').single();
-        if (cErr){ showDbg('Create board error: ' + cErr.message); return; }
-        currentBoardId = created.id;
-      } else {
-        currentBoardId = boards[0].id;
-      }
-
-      await loadColumns();
-      subscribeRealtime();
-    }
-
-    async function loadColumns(){
-      const { data: columns, error } = await supabase
-        .from('columns').select('id, title, position')
-        .eq('board_id', currentBoardId).order('position', { ascending: true });
-      if (error){ showDbg('Load columns error: ' + error.message); return; }
-
-      const boardEl = document.querySelector('.board');
-      boardEl.innerHTML = '';
-
-      for (const col of (columns || [])) {
-        const colEl = renderColumn(col);
-        boardEl.appendChild(colEl);
-        const { data: cards, error: cardErr } = await supabase
-          .from('cards').select('*').eq('column_id', col.id).order('position', { ascending: true });
-        if (cardErr){ showDbg('Load cards error: ' + cardErr.message); }
-        const cardsEl = colEl.querySelector('.cards');
-        (cards || []).forEach(card => cardsEl.appendChild(renderCard(card)));
-      }
-
-      // UPDATED: Add Column tile with hover reveal
-      const add = document.createElement('button');
-      add.className = 'add-column';
-      add.setAttribute('type','button');
-      add.setAttribute('aria-label','Add column');
-      add.innerHTML = '<span class="addcol-plus" aria-hidden="true">+</span><span class="addcol-label">Add Column</span>';
-      add.onclick = async ()=>{
-        if (!currentBoardId){ showDbg('No board id (board create/select failed).'); return; }
-        const { error } = await supabase.from('columns').insert({
-          board_id: currentBoardId,
-          title: 'New Column',
-          owner_id: session.user.id,
-          position: Math.floor(Date.now()/1000)
-        });
-        if (error){ showDbg('Insert column failed: ' + error.message); }
-      };
-      boardEl.appendChild(add);
-    }
-
-    function renderColumn(col){
-      const wrap = document.createElement('div');
-      wrap.className = 'column';
-      wrap.innerHTML = `
-        <div class="col-header">
-          <div class="col-title" contenteditable="true">${col.title}</div>
-          <div class="col-actions">
-            <button class="icon-btn" title="Share">🔗</button>
-            <button class="icon-btn" title="Delete">🗑</button>
-          </div>
-        </div>
-        <div class="cards"></div>
-        <div class="adder">
-          <input placeholder="Add a card..." />
-          <button class="btn">Add</button>
-        </div>
-      `;
-
-      wrap.querySelector('.col-title').addEventListener('blur', async ()=>{
-        const newTitle = wrap.querySelector('.col-title').textContent.trim() || 'Untitled';
-        const { error } = await supabase.from('columns').update({ title: newTitle }).eq('id', col.id);
-        if (error){ showDbg('Rename column failed: ' + error.message); }
-      });
-
-      // delete
-      wrap.querySelectorAll('.icon-btn')[1].onclick = async ()=>{
-        const { error } = await supabase.from('columns').delete().eq('id', col.id);
-        if (error){ showDbg('Delete column failed: ' + error.message); }
-      };
-
-      // share (manual user_id for now)
-      wrap.querySelectorAll('.icon-btn')[0].onclick = ()=> openShareDialog(col.id);
-
-      // add card
-      const input = wrap.querySelector('.adder input');
-      wrap.querySelector('.adder button').onclick = async ()=>{
-        const text = input.value.trim(); if (!text) return;
-        const { error } = await supabase.from('cards').insert({
-          column_id: col.id, text, position: Math.floor(Date.now()/1000), created_by: session.user.id
-        });
-        if (error){ showDbg('Add card failed: ' + error.message); }
-        input.value = '';
-      };
-
-      return wrap;
-    }
-
-    function renderCard(card){
-      const el = document.createElement('div');
-      el.className = 'card';
-      el.innerHTML = `
-        <input class="checkbox" type="checkbox" ${card.checked ? 'checked' : ''}/>
-        <div class="card-text" contenteditable="true">${card.text || ''}</div>
-        <div class="meta"><span class="pill-date">${card.due_date || ''}</span></div>
-      `;
-      el.querySelector('.checkbox').addEventListener('change', async (e)=>{
-        const { error } = await supabase.from('cards').update({ checked: e.target.checked }).eq('id', card.id);
-        if (error){ showDbg('Toggle card failed: ' + error.message); }
-      });
-      el.querySelector('.card-text').addEventListener('blur', async (e)=>{
-        const { error } = await supabase.from('cards').update({ text: e.target.textContent }).eq('id', card.id);
-        if (error){ showDbg('Edit card failed: ' + error.message); }
-      });
-      return el;
-    }
-
-    function subscribeRealtime(){
-      supabase.channel('columns-ch')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'columns' }, () => loadColumns())
-        .subscribe();
-      supabase.channel('cards-ch')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, () => loadColumns())
-        .subscribe();
-    }
-
-    function openShareDialog(columnId){
-      const email = prompt('Enter collaborator email (ask them to sign up first)');
-      if (!email) return;
-      const role = prompt("Role? Type 'viewer' or 'editor'", 'viewer');
-      if (!role || !['viewer','editor'].includes(role)) return alert('Invalid role');
-      alert('For now, paste their user_id (we will automate later).');
-      const userId = prompt('Paste collaborator user_id');
-      if (!userId) return;
-      supabase.from('column_access').insert({ column_id: columnId, user_id: userId, role })
-        .then(({ error }) => alert(error ? error.message : 'Shared!'));
-    }
-  </script>
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>
