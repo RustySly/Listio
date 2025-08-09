@@ -1,142 +1,282 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Listio – Board</title>
-  <style>
-    body { font-family: sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
-    header { background: #333; color: #fff; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-    header button { background: #555; color: white; border: none; padding: 5px 10px; cursor: pointer; }
-    #board { display: flex; padding: 10px; gap: 10px; }
-    .column { background: white; border-radius: 4px; padding: 10px; min-width: 200px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .column h2 { font-size: 1.1em; margin-top: 0; }
-    .card { background: #eee; padding: 5px; margin: 5px 0; border-radius: 3px; }
-    button.btn { margin-top: 5px; background: #007bff; color: white; border: none; padding: 5px; border-radius: 3px; cursor: pointer; }
-    button.btn:hover { background: #0056b3; }
-  </style>
-  <script src="https://unpkg.com/@supabase/supabase-js"></script>
-  <script src="common.js"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Columns – Listio</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --panel:#ffffff; --ink:#1f2937; --muted:#9aa3ae; --accent:#2d6cdf;
+    --line:#eceff3; --pill-bg:#eef3ff; --danger:#ef4343;
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+
+  /* topbar + sidebar */
+  .topbar{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line);background:#fff}
+  .brand{font-weight:700;font-size:18px}
+  .spacer{flex:1}
+  .btn{all:unset;background:#eef2ff;border:1px solid #d6e6ff;padding:6px 10px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px}
+  .btn.danger{background:var(--danger);color:#fff;border-color:transparent}
+  .app{display:grid;grid-template-columns:240px 1fr;height:calc(100% - 49px)}
+  .sidebar{padding:18px;border-right:1px solid var(--line);background:#fff}
+  .board{height:100%;overflow:auto;padding:16px;display:flex;gap:16px;background:#fafafa}
+
+  /* column + cards */
+  .column{background:#fff;border:1px solid var(--line);border-radius:8px;min-width:300px;max-width:340px;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(17,24,39,.06)}
+  .col-header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .col-title{font-weight:700;font-size:18px;padding:4px;border-radius:6px}
+  .col-title[contenteditable="true"]:focus{outline:1px solid var(--accent);background:var(--pill-bg)}
+  .col-actions{margin-left:auto;display:flex;gap:6px}
+  .icon-btn{all:unset;width:26px;height:26px;border-radius:6px;display:grid;place-items:center;cursor:pointer;border:1px solid var(--line);font-size:12px;color:#6b7280}
+  .icon-btn:hover{background:#f5f5f5}
+  .cards{display:flex;flex-direction:column;gap:8px;padding:10px;min-height:48px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px;display:grid;grid-template-columns:auto 1fr auto;align-items:flex-start;gap:8px}
+  .checkbox{width:16px;height:16px;accent-color:var(--accent)}
+  .card-text{white-space:pre-wrap;outline:none;font-size:13px}
+  .adder{border-top:1px dashed var(--line);padding:8px;display:flex;gap:6px}
+  .adder input{flex:1;border:1px solid var(--line);border-radius:4px;padding:8px;background:transparent;color:var(--ink);font-size:13px}
+  .add-tile{background:#f3f4f6;border:1px dashed var(--line);border-radius:12px;min-width:300px;height:520px;display:grid;place-items:center;color:#9aa3ae}
+  .add-tile:hover{background:#eef2ff;color:#1e40af;cursor:pointer}
+
+  /* drag */
+  .dragging{opacity:.6}
+  .cards.drag-over{outline:1px dashed var(--accent);outline-offset:-4px}
+  #dbg{position:fixed;left:12px;bottom:12px;max-width:600px;padding:8px 10px;background:#fff3cd;border:1px solid #ffe08a;border-radius:8px;font:12px system-ui;color:#533f03;z-index:9999;white-space:pre-wrap;display:none}
+</style>
 </head>
 <body>
+  <div class="topbar">
+    <div class="brand">Columns</div>
+    <div class="spacer"></div>
+    <div id="who" class="muted" style="font-size:12px"></div>
+    <button id="signout" class="btn" style="display:none">Sign out</button>
+  </div>
 
-<header>
-  <h1>My Board</h1>
-  <button id="sign-out">Sign Out</button>
-</header>
+  <div class="app">
+    <aside class="sidebar">
+      <div style="font-weight:600;margin-bottom:8px">Your Board</div>
+      <div style="color:var(--muted);font-size:12px">Columns appear on the right</div>
+    </aside>
+    <main class="board" id="board"></main>
+  </div>
 
-<main>
-  <div id="board"></div>
-  <button id="create-board" class="btn">Create Board</button>
-  <button id="add-column" class="btn">Add Column</button>
-</main>
+  <div id="dbg"></div>
 
-<script>
-let session = null;
-let currentBoardId = null;
-const boardEl = document.getElementById('board');
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="./common.js"></script>
+  <script>
+  // ===== helpers
+  const boardEl = document.getElementById('board');
+  const whoEl = document.getElementById('who');
+  const dbg = document.getElementById('dbg');
+  function show(msg){ dbg.textContent = msg; dbg.style.display = 'block'; }
+  function hideDbg(){ dbg.style.display = 'none'; }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  session = await requireAuth();
-  if (!session) return; // redirected if not logged in
-  await ensureBoard();
-  await loadBoard();
-});
+  let session = null, currentBoardId = null;
 
-document.getElementById('sign-out').addEventListener('click', async () => {
-  await supabase.auth.signOut();
-  window.location.href = 'auth.html';
-});
+  // ===== gate
+  (async ()=>{
+    session = await requireAuth('./auth.html');
+    if (!session) return;
+    whoEl.textContent = session.user.email;
+    document.getElementById('signout').style.display = 'inline-flex';
+    await ensureBoard();
+    subscribeRealtime();
+    await loadBoard();
+  })();
 
-document.getElementById('create-board').addEventListener('click', async () => {
-  const { data, error } = await supabase
-    .from('boards')
-    .insert({ owner_id: session.user.id, name: 'New Board' })
-    .select()
-    .single();
-  if (error) {
-    alert('Create board error: ' + error.message);
-    return;
-  }
-  currentBoardId = data.id;
-  await loadBoard();
-});
+  document.getElementById('signout').onclick = async ()=>{
+    await supabase.auth.signOut();
+    location.replace('./auth.html');
+  };
 
-document.getElementById('add-column').addEventListener('click', async () => {
-  if (!currentBoardId) {
-    alert('Create or select a board first');
-    return;
-  }
-  const { error } = await supabase.from('columns').insert({
-    board_id: currentBoardId,
-    title: 'New Column',
-    owner_id: session.user.id,
-    position: Math.floor(Date.now()/1000)
-  });
-  if (error) alert('Insert column failed: ' + error.message);
-});
-
-// Ensure user has a board
-async function ensureBoard() {
-  const { data, error } = await supabase
-    .from('boards')
-    .select()
-    .eq('owner_id', session.user.id)
-    .limit(1)
-    .single();
-  if (error && error.code !== 'PGRST116') {
-    console.error(error);
-    return;
-  }
-  if (!data) {
-    const { data: newBoard, error: createError } = await supabase
-      .from('boards')
-      .insert({ owner_id: session.user.id, name: 'My Board' })
-      .select()
-      .single();
-    if (createError) {
-      console.error(createError);
-      return;
-    }
-    currentBoardId = newBoard.id;
-  } else {
-    currentBoardId = data.id;
-  }
-}
-
-// Load board from DB
-async function loadBoard() {
-  if (!currentBoardId) return;
-
-  const { data: columns, error } = await supabase
-    .from('columns')
-    .select('id, title, position')
-    .eq('board_id', currentBoardId)
-    .order('position', { ascending: true });
-
-  if (error) {
-    console.error(error);
-    return;
+  // ===== data
+  async function ensureBoard(){
+    const { data: boards, error } = await supabase
+      .from('boards').select('*').eq('owner_id', session.user.id).limit(1);
+    if (error){ show('Load boards error: '+error.message); return; }
+    if (!boards?.length){
+      const { data: created, error: cErr } = await supabase
+        .from('boards').insert({ owner_id: session.user.id, name: 'My Board' }).select('*').single();
+      if (cErr){ show('Create board error: '+cErr.message); return; }
+      currentBoardId = created.id;
+    } else { currentBoardId = boards[0].id; }
   }
 
-  boardEl.innerHTML = '';
-  (columns || []).forEach(col => {
-    const colDiv = document.createElement('div');
-    colDiv.className = 'column';
-    colDiv.innerHTML = `<h2>${col.title}</h2>`;
-    boardEl.appendChild(colDiv);
-  });
-}
+  async function loadBoard(){
+    hideDbg();
+    const { data: columns, error } = await supabase
+      .from('columns').select('id,title,position').eq('board_id', currentBoardId)
+      .order('position', { ascending: true });
+    if (error){ show('Load columns error: '+error.message); return; }
 
-// Real-time updates for columns
-supabase
-  .channel('realtime:columns')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'columns' }, payload => {
-    if (payload.new && payload.new.board_id === currentBoardId) {
-      loadBoard();
-    }
-  })
-  .subscribe();
+    const next = document.createElement('div'); // offscreen render
+    // + Add Column tile
+    const addTile = document.createElement('div');
+    addTile.className = 'add-tile';
+    addTile.innerHTML = '<div><div style="font-size:22px;line-height:1">＋</div><div>Add Column</div></div>';
+    addTile.onclick = addColumn;
+    next.appendChild(addTile);
 
-</script>
+    (columns||[]).forEach(c => next.appendChild(renderColumn(c)));
+
+    boardEl.replaceChildren(...next.children);
+  }
+
+  async function addColumn(){
+    const { error } = await supabase.from('columns').insert({
+      board_id: currentBoardId,
+      title: 'New Column',
+      owner_id: session.user.id,
+      position: Math.floor(Date.now()/1000)
+    });
+    if (error) show('Insert column failed: '+error.message);
+  }
+
+  function renderColumn(col){
+    const wrap = document.createElement('div');
+    wrap.className = 'column';
+    wrap.draggable = true;
+    wrap.dataset.colId = col.id;
+
+    wrap.innerHTML = `
+      <div class="col-header">
+        <div class="col-title" contenteditable="true">${col.title}</div>
+        <div class="col-actions">
+          <button class="icon-btn" title="Delete">🗑</button>
+        </div>
+      </div>
+      <div class="cards" data-col="${col.id}"></div>
+      <div class="adder">
+        <input placeholder="Add a card..." />
+        <button class="btn">Add</button>
+      </div>
+    `;
+
+    // rename column
+    const titleEl = wrap.querySelector('.col-title');
+    titleEl.addEventListener('blur', async ()=>{
+      const newTitle = titleEl.textContent.trim() || 'Untitled';
+      const { error } = await supabase.from('columns').update({ title: newTitle }).eq('id', col.id);
+      if (error) show('Rename column failed: '+error.message);
+    });
+
+    // delete column
+    wrap.querySelector('.icon-btn').onclick = async ()=>{
+      const { error } = await supabase.from('columns').delete().eq('id', col.id);
+      if (error) show('Delete column failed: '+error.message);
+    };
+
+    // load cards
+    (async ()=>{
+      const { data: cards, error } = await supabase
+        .from('cards').select('*').eq('column_id', col.id).order('position',{ascending:true});
+      if (error){ show('Load cards error: '+error.message); return; }
+      const cardsEl = wrap.querySelector('.cards');
+      (cards||[]).forEach(card => cardsEl.appendChild(renderCard(card)));
+      enableCardDnD(cardsEl);
+    })();
+
+    // add card
+    const input = wrap.querySelector('.adder input');
+    wrap.querySelector('.adder button').onclick = async ()=>{
+      const text = input.value.trim(); if(!text) return;
+      const { error } = await supabase.from('cards').insert({
+        column_id: col.id, text, position: Math.floor(Date.now()/1000), created_by: session.user.id
+      });
+      if (error) show('Add card failed: '+error.message);
+      else input.value='';
+    };
+
+    enableColumnDnD(wrap);
+    return wrap;
+  }
+
+  function renderCard(card){
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.draggable = true;
+    el.dataset.cardId = card.id;
+    el.innerHTML = `
+      <input class="checkbox" type="checkbox" ${card.checked ? 'checked' : ''}/>
+      <div class="card-text" contenteditable="true">${card.text || ''}</div>
+      <div></div>
+    `;
+    el.querySelector('.checkbox').addEventListener('change', async (e)=>{
+      const { error } = await supabase.from('cards').update({ checked: e.target.checked }).eq('id', card.id);
+      if (error) show('Toggle card failed: '+error.message);
+    });
+    el.querySelector('.card-text').addEventListener('blur', async (e)=>{
+      const { error } = await supabase.from('cards').update({ text: e.target.textContent }).eq('id', card.id);
+      if (error) show('Edit card failed: '+error.message);
+    });
+    return el;
+  }
+
+  // ===== Drag & drop – Columns
+  function enableColumnDnD(colEl){
+    colEl.addEventListener('dragstart', e=>{ colEl.classList.add('dragging'); e.dataTransfer.setData('text/col', colEl.dataset.colId); });
+    colEl.addEventListener('dragend', ()=> colEl.classList.remove('dragging'));
+    boardEl.addEventListener('dragover', e=>{
+      const dragging = document.querySelector('.column.dragging');
+      if(!dragging) return;
+      e.preventDefault();
+      const siblings = [...boardEl.querySelectorAll('.column')].filter(x=>x!==dragging);
+      const after = siblings.find(s=> e.clientX <= s.getBoundingClientRect().left + s.offsetWidth/2 );
+      boardEl.insertBefore(dragging, after || null);
+    });
+    boardEl.addEventListener('drop', async ()=>{
+      // persist new order
+      const ids = [...boardEl.querySelectorAll('.column')].map(el=>el.dataset.colId).filter(Boolean);
+      const updates = ids.map((id, i)=> ({ id, position: i+1 }));
+      if(!ids.length) return;
+      const { error } = await supabase.from('columns').upsert(updates);
+      if (error) show('Reorder columns failed: '+error.message);
+    });
+  }
+
+  // ===== Drag & drop – Cards
+  function enableCardDnD(cardsEl){
+    cardsEl.addEventListener('dragover', e=>{
+      const dragging = document.querySelector('.card.dragging');
+      if(!dragging) return;
+      e.preventDefault();
+      cardsEl.classList.add('drag-over');
+      const siblings = [...cardsEl.querySelectorAll('.card')].filter(x=>x!==dragging);
+      const after = siblings.find(s=> e.clientY <= s.getBoundingClientRect().top + s.offsetHeight/2 );
+      cardsEl.insertBefore(dragging, after || null);
+    });
+    cardsEl.addEventListener('dragleave', ()=> cardsEl.classList.remove('drag-over'));
+    cardsEl.addEventListener('drop', async e=>{
+      cardsEl.classList.remove('drag-over');
+      const colId = cardsEl.dataset.col;
+      const ids = [...cardsEl.querySelectorAll('.card')].map(el=>el.dataset.cardId);
+      const updates = ids.map((id,i)=> ({ id, position: i+1, column_id: colId }));
+      if(!ids.length) return;
+      const { error } = await supabase.from('cards').upsert(updates);
+      if (error) show('Reorder cards failed: '+error.message);
+    });
+
+    cardsEl.addEventListener('dragstart', e=>{
+      const card = e.target.closest('.card'); if(!card) return;
+      card.classList.add('dragging');
+    });
+    cardsEl.addEventListener('dragend', e=>{
+      const card = e.target.closest('.card'); if(!card) return;
+      card.classList.remove('dragging');
+    });
+  }
+
+  // ===== Realtime
+  function subscribeRealtime(){
+    supabase.channel('columns-rt')
+      .on('postgres_changes',{event:'*',schema:'public',table:'columns'}, loadBoard)
+      .subscribe();
+    supabase.channel('cards-rt')
+      .on('postgres_changes',{event:'*',schema:'public',table:'cards'}, loadBoard)
+      .subscribe();
+  }
+  </script>
 </body>
 </html>
